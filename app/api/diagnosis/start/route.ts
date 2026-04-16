@@ -1,0 +1,170 @@
+import { NextResponse } from "next/server";
+
+import { parseQuestionOptions } from "@/lib/diagnosis/mappers";
+import { getSupabaseAdminClient } from "@/lib/supabase/server";
+import type {
+  DiagnosisStartGetResponse,
+  DiagnosisStartRequest,
+  DiagnosisStartResponse,
+} from "@/types/api";
+import type { Database } from "@/types/db";
+import type { DiagnosisQuestion, DiagnosisQuestionSet, DiagnosisSession } from "@/types/domain";
+import {
+  diagnosisStartGetResponseSchema,
+  diagnosisStartRequestSchema,
+  diagnosisStartResponseSchema,
+} from "@/validators/diagnosis";
+
+type QuestionSetRow = Database["public"]["Tables"]["diagnosis_question_sets"]["Row"];
+type QuestionRow = Database["public"]["Tables"]["diagnosis_questions"]["Row"];
+type SessionRow = Database["public"]["Tables"]["diagnosis_sessions"]["Row"];
+
+function mapQuestionSet(row: QuestionSetRow): DiagnosisQuestionSet {
+  return {
+    id: row.id,
+    code: row.code,
+    title: row.title,
+    description: row.description,
+    version: row.version,
+    isActive: row.is_active,
+    createdAt: row.created_at,
+  };
+}
+
+function mapQuestion(row: QuestionRow): DiagnosisQuestion {
+  return {
+    id: row.id,
+    questionSetId: row.question_set_id,
+    code: row.code,
+    title: row.title ?? null,
+    questionText: row.question_text ?? row.title,
+    dimension: row.dimension as DiagnosisQuestion["dimension"],
+    position: row.position ?? null,
+    orderIndex: row.order_index ?? row.position,
+    inputType: (row.input_type === "single_select" ? "single_select" : "scale"),
+    isRequired: row.is_required,
+    options: parseQuestionOptions(row.options),
+    weight: row.weight ?? 1,
+    meta:
+      row.meta && typeof row.meta === "object" && !Array.isArray(row.meta)
+        ? (row.meta as Record<string, unknown>)
+        : {},
+    createdAt: row.created_at,
+  };
+}
+
+function mapSession(row: SessionRow): DiagnosisSession {
+  return {
+    id: row.id,
+    companyId: row.company_id,
+    questionSetId: row.question_set_id,
+    status: row.status === "completed" ? "completed" : "in_progress",
+    totalScore: row.total_score,
+    summaryKey:
+      row.summary_key === "low" || row.summary_key === "medium" || row.summary_key === "high"
+        ? row.summary_key
+        : null,
+    createdAt: row.created_at,
+    completedAt: row.completed_at,
+  };
+}
+
+async function loadQuestionSet(code: string) {
+  const supabase = getSupabaseAdminClient();
+
+  const { data: questionSet, error: setError } = await supabase
+    .from("diagnosis_question_sets")
+    .select("*")
+    .eq("code", code)
+    .single();
+
+  if (setError || !questionSet) {
+    return { error: "Question set not found." as const };
+  }
+
+  const { data: questions, error: questionsError } = await supabase
+    .from("diagnosis_questions")
+    .select("*")
+    .eq("question_set_id", questionSet.id)
+    .order("order_index", { ascending: true, nullsFirst: false })
+    .order("position", { ascending: true });
+
+  if (questionsError || !questions) {
+    return { error: "Questions not found." as const };
+  }
+
+  return {
+    questionSet: mapQuestionSet(questionSet),
+    questions: questions.map(mapQuestion),
+  };
+}
+
+export async function GET() {
+  const result = await loadQuestionSet("express_v1");
+
+  if ("error" in result) {
+    return NextResponse.json({ error: result.error }, { status: 404 });
+  }
+
+  const payload: DiagnosisStartGetResponse = {
+    questionSet: result.questionSet,
+    questions: result.questions,
+  };
+
+  return NextResponse.json(diagnosisStartGetResponseSchema.parse(payload));
+}
+
+export async function POST(request: Request) {
+  const body = (await request.json()) as DiagnosisStartRequest;
+  const parsed = diagnosisStartRequestSchema.safeParse(body);
+
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Invalid diagnosis start payload.", details: parsed.error.flatten() },
+      { status: 400 },
+    );
+  }
+
+  const { companyId, questionSetCode = "express_v1" } = parsed.data;
+  const questionSetResult = await loadQuestionSet(questionSetCode);
+
+  if ("error" in questionSetResult) {
+    return NextResponse.json({ error: questionSetResult.error }, { status: 404 });
+  }
+
+  const supabase = getSupabaseAdminClient();
+
+  const { data: company, error: companyError } = await supabase
+    .from("companies")
+    .select("id")
+    .eq("id", companyId)
+    .single();
+
+  if (companyError || !company) {
+    return NextResponse.json({ error: "Company not found." }, { status: 404 });
+  }
+
+  const { data: session, error: sessionError } = await supabase
+    .from("diagnosis_sessions")
+    .insert({
+      company_id: company.id,
+      question_set_id: questionSetResult.questionSet.id,
+      status: "in_progress",
+    })
+    .select("*")
+    .single();
+
+  if (sessionError || !session) {
+    return NextResponse.json({ error: "Failed to create diagnosis session." }, { status: 500 });
+  }
+
+  const payload: DiagnosisStartResponse = {
+    session: mapSession(session),
+    questionSet: questionSetResult.questionSet,
+    questions: questionSetResult.questions,
+  };
+
+  return NextResponse.json(diagnosisStartResponseSchema.parse(payload), {
+    status: 201,
+  });
+}

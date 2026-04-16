@@ -1,0 +1,1563 @@
+{
+  "toolCategory": {
+    "slug": "knowledge-base",
+    "name": "База знаний",
+    "description": "Инструменты, связанные с симптомами бизнеса.",
+    "position": 999
+  },
+  "tools": [
+    {
+      "slug": "9-box-grid",
+      "title": "9-Box Grid"
+    },
+    {
+      "slug": "adkar",
+      "title": "ADKAR"
+    },
+    {
+      "slug": "ansoff",
+      "title": "Ansoff"
+    },
+    {
+      "slug": "bcp",
+      "title": "BCP"
+    },
+    {
+      "slug": "bi-dashbordy",
+      "title": "BI-дашборды"
+    },
+    {
+      "slug": "bi-strategiya",
+      "title": "BI-стратегия"
+    },
+    {
+      "slug": "blue-ocean-strategy",
+      "title": "Blue Ocean Strategy"
+    },
+    {
+      "slug": "bottleneck-analysis",
+      "title": "Bottleneck analysis"
+    },
+    {
+      "slug": "brand-audit",
+      "title": "Brand Audit"
+    },
+    {
+      "slug": "bsc",
+      "title": "BSC"
+    },
+    {
+      "slug": "business-model-canvas",
+      "title": "Business Model Canvas"
+    },
+    {
+      "slug": "cac",
+      "title": "CAC"
+    },
+    {
+      "slug": "cac-po-kanalam",
+      "title": "CAC по каналам"
+    },
+    {
+      "slug": "cash-flow",
+      "title": "Cash Flow"
+    },
+    {
+      "slug": "challenger-sale",
+      "title": "Challenger Sale"
+    },
+    {
+      "slug": "cjm",
+      "title": "CJM"
+    },
+    {
+      "slug": "crm-erp-audit",
+      "title": "CRM/ERP-аудит"
+    },
+    {
+      "slug": "data-governance",
+      "title": "Data Governance"
+    },
+    {
+      "slug": "dcf",
+      "title": "DCF"
+    },
+    {
+      "slug": "digital-roadmap",
+      "title": "Digital Roadmap"
+    },
+    {
+      "slug": "disc",
+      "title": "DISC"
+    },
+    {
+      "slug": "ebitda",
+      "title": "EBITDA"
+    },
+    {
+      "slug": "employer-branding",
+      "title": "Employer branding"
+    },
+    {
+      "slug": "enps",
+      "title": "eNPS"
+    },
+    {
+      "slug": "exit-analiz",
+      "title": "Exit-анализ"
+    },
+    {
+      "slug": "force-field-analysis",
+      "title": "Force Field Analysis"
+    },
+    {
+      "slug": "founders-mentality",
+      "title": "Founder's Mentality"
+    },
+    {
+      "slug": "galbraith-star-model",
+      "title": "Galbraith Star Model"
+    },
+    {
+      "slug": "hoshin-kanri",
+      "title": "Hoshin Kanri"
+    },
+    {
+      "slug": "it-audit",
+      "title": "IT-аудит"
+    },
+    {
+      "slug": "jtbd",
+      "title": "JTBD"
+    },
+    {
+      "slug": "kaizen",
+      "title": "Kaizen"
+    },
+    {
+      "slug": "kpi",
+      "title": "KPI"
+    },
+    {
+      "slug": "kpi-zapolneniya",
+      "title": "KPI заполнения"
+    },
+    {
+      "slug": "kpi-derevo",
+      "title": "KPI-дерево"
+    },
+    {
+      "slug": "ltv",
+      "title": "LTV"
+    },
+    {
+      "slug": "make-vs-buy-analiz",
+      "title": "Make vs Buy анализ"
+    },
+    {
+      "slug": "mckinsey-7s",
+      "title": "McKinsey 7S"
+    },
+    {
+      "slug": "nadler-tushman",
+      "title": "Nadler-Tushman"
+    },
+    {
+      "slug": "nps",
+      "title": "NPS"
+    },
+    {
+      "slug": "okr",
+      "title": "OKR"
+    },
+    {
+      "slug": "p-l",
+      "title": "P&L"
+    },
+    {
+      "slug": "p-l-po-produktam-klientam",
+      "title": "P&L по продуктам/клиентам"
+    },
+    {
+      "slug": "pestel",
+      "title": "PESTEL"
+    },
+    {
+      "slug": "plan-fakt-analiz",
+      "title": "Plan/факт анализ"
+    },
+    {
+      "slug": "porters-five-forces",
+      "title": "Porter's Five Forces"
+    },
+    {
+      "slug": "raci",
+      "title": "RACI"
+    },
+    {
+      "slug": "risk-register",
+      "title": "Risk Register"
+    },
+    {
+      "slug": "roadmap",
+      "title": "Roadmap"
+    },
+    {
+      "slug": "romi",
+      "title": "ROMI"
+    },
+    {
+      "slug": "sha",
+      "title": "SHA"
+    },
+    {
+      "slug": "six-sigma",
+      "title": "Six Sigma"
+    },
+    {
+      "slug": "spin-selling",
+      "title": "SPIN Selling"
+    },
+    {
+      "slug": "stp",
+      "title": "STP"
+    },
+    {
+      "slug": "succession-planning",
+      "title": "Succession Planning"
+    },
+    {
+      "slug": "swot",
+      "title": "SWOT"
+    },
+    {
+      "slug": "tam-sam-som",
+      "title": "TAM/SAM/SOM"
+    },
+    {
+      "slug": "three-horizons",
+      "title": "Three Horizons"
+    },
+    {
+      "slug": "vision-statement",
+      "title": "Vision Statement"
+    },
+    {
+      "slug": "vrio",
+      "title": "VRIO"
+    },
+    {
+      "slug": "win-loss-analysis",
+      "title": "Win/Loss analysis"
+    },
+    {
+      "slug": "working-capital-management",
+      "title": "Working Capital Management"
+    },
+    {
+      "slug": "analiz-konkurentov",
+      "title": "Анализ конкурентов"
+    },
+    {
+      "slug": "arhitektura-resheniya",
+      "title": "Архитектура решения"
+    },
+    {
+      "slug": "audit-dannyh",
+      "title": "Аудит данных"
+    },
+    {
+      "slug": "audit-prodazh",
+      "title": "Аудит продаж"
+    },
+    {
+      "slug": "audit-roli",
+      "title": "Аудит роли"
+    },
+    {
+      "slug": "belbin",
+      "title": "Белбин"
+    },
+    {
+      "slug": "byudzhetirovanie",
+      "title": "Бюджетирование"
+    },
+    {
+      "slug": "vladeltsy-protsessov",
+      "title": "Владельцы процессов"
+    },
+    {
+      "slug": "voronka",
+      "title": "Воронка"
+    },
+    {
+      "slug": "voronka-nayma",
+      "title": "Воронка найма"
+    },
+    {
+      "slug": "vybor-sistemy",
+      "title": "Выбор системы"
+    },
+    {
+      "slug": "geymifikatsiya",
+      "title": "Геймификация"
+    },
+    {
+      "slug": "glossariy-metrik",
+      "title": "Глоссарий метрик"
+    },
+    {
+      "slug": "greydy",
+      "title": "Грейды"
+    },
+    {
+      "slug": "dizayn-orgstruktury",
+      "title": "Дизайн оргструктуры"
+    },
+    {
+      "slug": "dizayn-struktury",
+      "title": "Дизайн структуры"
+    },
+    {
+      "slug": "ib-audit",
+      "title": "ИБ-аудит"
+    },
+    {
+      "slug": "ipr",
+      "title": "ИПР"
+    },
+    {
+      "slug": "kadrovyy-rezerv",
+      "title": "Кадровый резерв"
+    },
+    {
+      "slug": "karta-riskov",
+      "title": "Карта рисков"
+    },
+    {
+      "slug": "karta-steykholderov",
+      "title": "Карта стейкхолдеров"
+    },
+    {
+      "slug": "kartirovanie-protsessov",
+      "title": "Картирование процессов"
+    },
+    {
+      "slug": "komandnye-dogovorennosti",
+      "title": "Командные договорённости"
+    },
+    {
+      "slug": "korporativnye-reglamenty",
+      "title": "Корпоративные регламенты"
+    },
+    {
+      "slug": "kotter-8-shagov",
+      "title": "Коттер 8 шагов"
+    },
+    {
+      "slug": "kulturnyy-audit",
+      "title": "Культурный аудит"
+    },
+    {
+      "slug": "matritsa-polnomochiy",
+      "title": "Матрица полномочий"
+    },
+    {
+      "slug": "model-adizesa",
+      "title": "Модель Адизеса"
+    },
+    {
+      "slug": "obuchenie",
+      "title": "Обучение"
+    },
+    {
+      "slug": "obuchenie-polzovateley",
+      "title": "Обучение пользователей"
+    },
+    {
+      "slug": "partnerskaya-sessiya",
+      "title": "Партнёрская сессия"
+    },
+    {
+      "slug": "prioritizatsiya-avtomatizatsii",
+      "title": "Приоритизация автоматизации"
+    },
+    {
+      "slug": "profili-dolzhnostey",
+      "title": "Профили должностей"
+    },
+    {
+      "slug": "profil-kandidata",
+      "title": "Профиль кандидата"
+    },
+    {
+      "slug": "psihologicheskaya-bezopasnost",
+      "title": "Психологическая безопасность"
+    },
+    {
+      "slug": "rabota-s-soprotivleniem",
+      "title": "Работа с сопротивлением"
+    },
+    {
+      "slug": "razbor-sdelok",
+      "title": "Разбор сделок"
+    },
+    {
+      "slug": "raspredelenie-roley",
+      "title": "Распределение ролей"
+    },
+    {
+      "slug": "reglamenty",
+      "title": "Регламенты"
+    },
+    {
+      "slug": "regulyarnyy-menedzhment",
+      "title": "Регулярный менеджмент"
+    },
+    {
+      "slug": "ritm-vstrech",
+      "title": "Ритм встреч"
+    },
+    {
+      "slug": "skripty",
+      "title": "Скрипты"
+    },
+    {
+      "slug": "sovet-direktorov",
+      "title": "Совет директоров"
+    },
+    {
+      "slug": "strategicheskaya-sessiya",
+      "title": "Стратегическая сессия"
+    },
+    {
+      "slug": "strategiya",
+      "title": "Стратегия"
+    },
+    {
+      "slug": "stsenarnoe-planirovanie",
+      "title": "Сценарное планирование"
+    },
+    {
+      "slug": "tehzadanie",
+      "title": "Техзадание"
+    },
+    {
+      "slug": "upravlencheskaya-otchetnost",
+      "title": "Управленческая отчётность"
+    },
+    {
+      "slug": "upravlyayuschiy-komitet",
+      "title": "Управляющий комитет"
+    },
+    {
+      "slug": "finansovaya-model",
+      "title": "Финансовая модель"
+    },
+    {
+      "slug": "yunit-ekonomika",
+      "title": "Юнит-экономика"
+    }
+  ],
+  "symptoms": [
+    {
+      "slug": "vneshnyaya-sreda-ne-ponimaem-chto-proishodit-na-rynke",
+      "title": "Не понимаем что происходит на рынке",
+      "section": "ВНЕШНЯЯ СРЕДА",
+      "reason": "Нет систематического мониторинга внешней среды"
+    },
+    {
+      "slug": "vneshnyaya-sreda-sanktsii-regulyatorika-udarili-po-biznesu",
+      "title": "Санкции/регуляторика ударили по бизнесу",
+      "section": "ВНЕШНЯЯ СРЕДА",
+      "reason": "Внешний шок требует переосмысления модели"
+    },
+    {
+      "slug": "vneshnyaya-sreda-ne-znaem-naskolko-velik-nash-rynok",
+      "title": "Не знаем насколько велик наш рынок",
+      "section": "ВНЕШНЯЯ СРЕДА",
+      "reason": "Нет понимания потенциала рынка"
+    },
+    {
+      "slug": "vneshnyaya-sreda-ne-ponimaem-pochemu-klienty-vybirayut-konkurentov",
+      "title": "Не понимаем почему клиенты выбирают конкурентов",
+      "section": "ВНЕШНЯЯ СРЕДА",
+      "reason": "Нужен конкурентный анализ и голос клиента"
+    },
+    {
+      "slug": "strategiya-my-ne-ponimaem-kuda-idem",
+      "title": "Мы не понимаем куда идём",
+      "section": "СТРАТЕГИЯ",
+      "reason": "Нет чёткого видения — первое что нужно зафиксировать"
+    },
+    {
+      "slug": "strategiya-u-nas-net-strategii",
+      "title": "У нас нет стратегии",
+      "section": "СТРАТЕГИЯ",
+      "reason": "Полный цикл разработки стратегии"
+    },
+    {
+      "slug": "strategiya-strategiya-est-no-nikto-ee-ne-vypolnyaet",
+      "title": "Стратегия есть, но никто её не выполняет",
+      "section": "СТРАТЕГИЯ",
+      "reason": "Проблема в каскадировании — нужна система трансляции"
+    },
+    {
+      "slug": "strategiya-neponyatno-na-kakom-rynke-nam-rasti",
+      "title": "Непонятно на каком рынке нам расти",
+      "section": "СТРАТЕГИЯ",
+      "reason": "Нужен инструмент выбора вектора роста"
+    },
+    {
+      "slug": "strategiya-konkurenty-nas-dogonyayut",
+      "title": "Конкуренты нас догоняют",
+      "section": "СТРАТЕГИЯ",
+      "reason": "Анализ конкурентного давления и поиск незанятых ниш"
+    },
+    {
+      "slug": "strategiya-ne-ponimaem-svoyu-biznes-model",
+      "title": "Не понимаем свою бизнес-модель",
+      "section": "СТРАТЕГИЯ",
+      "reason": "Формализация логики создания ценности"
+    },
+    {
+      "slug": "kommertsiya-prodazhi-nestabilny-zavisyat-ot-odnogo-cheloveka",
+      "title": "Продажи нестабильны, зависят от одного человека",
+      "section": "КОММЕРЦИЯ",
+      "reason": "Нет системы — всё на личных качествах"
+    },
+    {
+      "slug": "kommertsiya-ne-znaem-skolko-stoit-privlech-klienta",
+      "title": "Не знаем сколько стоит привлечь клиента",
+      "section": "КОММЕРЦИЯ",
+      "reason": "Нет финансовой аналитики по маркетингу"
+    },
+    {
+      "slug": "kommertsiya-marketingovyy-byudzhet-tratim-no-ne-ponimaem-otdachu",
+      "title": "Маркетинговый бюджет тратим, но не понимаем отдачу",
+      "section": "КОММЕРЦИЯ",
+      "reason": "Нет измерений — решения на ощущениях"
+    },
+    {
+      "slug": "kommertsiya-klienty-uhodyat-k-konkurentam",
+      "title": "Клиенты уходят к конкурентам",
+      "section": "КОММЕРЦИЯ",
+      "reason": "Нужно понять на каком этапе и почему уходят"
+    },
+    {
+      "slug": "kommertsiya-ne-mozhem-sformulirovat-chem-otlichaemsya",
+      "title": "Не можем сформулировать чем отличаемся",
+      "section": "КОММЕРЦИЯ",
+      "reason": "Проблема с позиционированием и УТП"
+    },
+    {
+      "slug": "kommertsiya-menedzhery-prodayut-ploho",
+      "title": "Менеджеры продают плохо",
+      "section": "КОММЕРЦИЯ",
+      "reason": "Проблема в методологии и навыках"
+    },
+    {
+      "slug": "operatsionnaya-model-vse-derzhitsya-na-konkretnyh-lyudyah",
+      "title": "Всё держится на конкретных людях",
+      "section": "ОПЕРАЦИОННАЯ МОДЕЛЬ",
+      "reason": "Нет описанных процессов — знания в головах"
+    },
+    {
+      "slug": "operatsionnaya-model-mnogo-oshibok-i-peredelok",
+      "title": "Много ошибок и переделок",
+      "section": "ОПЕРАЦИОННАЯ МОДЕЛЬ",
+      "reason": "Системные дефекты — нужна методология улучшений"
+    },
+    {
+      "slug": "operatsionnaya-model-protsessy-est-no-ih-ne-soblyudayut",
+      "title": "Процессы есть, но их не соблюдают",
+      "section": "ОПЕРАЦИОННАЯ МОДЕЛЬ",
+      "reason": "Проблема не в процессах, а в их принятии"
+    },
+    {
+      "slug": "operatsionnaya-model-neponyatno-s-chego-nachat-avtomatizatsiyu",
+      "title": "Непонятно с чего начать автоматизацию",
+      "section": "ОПЕРАЦИОННАЯ МОДЕЛЬ",
+      "reason": "Нужна диагностика перед внедрением"
+    },
+    {
+      "slug": "operatsionnaya-model-kazhdyy-otdel-rabotaet-v-svoem-ritme",
+      "title": "Каждый отдел работает в своём ритме",
+      "section": "ОПЕРАЦИОННАЯ МОДЕЛЬ",
+      "reason": "Нет единого операционного ритма"
+    },
+    {
+      "slug": "lyudi-i-organizatsiya-vse-cherez-menya-ne-mogu-uyti-v-otpusk",
+      "title": "Всё через меня, не могу уйти в отпуск",
+      "section": "ЛЮДИ И ОРГАНИЗАЦИЯ",
+      "reason": "Классический симптом ловушки основателя"
+    },
+    {
+      "slug": "lyudi-i-organizatsiya-nanyal-menedzherov-no-oni-ne-spravlyayutsya",
+      "title": "Нанял менеджеров, но они не справляются",
+      "section": "ЛЮДИ И ОРГАНИЗАЦИЯ",
+      "reason": "Проблема в подборе или развитии — нужна диагностика"
+    },
+    {
+      "slug": "lyudi-i-organizatsiya-resheniya-prinimayutsya-slishkom-medlenno",
+      "title": "Решения принимаются слишком медленно",
+      "section": "ЛЮДИ И ОРГАНИЗАЦИЯ",
+      "reason": "Нет чёткого разграничения кто что решает"
+    },
+    {
+      "slug": "lyudi-i-organizatsiya-neponyatno-kto-za-chto-otvechaet",
+      "title": "Непонятно кто за что отвечает",
+      "section": "ЛЮДИ И ОРГАНИЗАЦИЯ",
+      "reason": "Отсутствие формализованной ответственности"
+    },
+    {
+      "slug": "lyudi-i-organizatsiya-kompaniya-rastet-nachalsya-haos",
+      "title": "Компания растёт, начался хаос",
+      "section": "ЛЮДИ И ОРГАНИЗАЦИЯ",
+      "reason": "Типичный переход из Давай-давай в Юность"
+    },
+    {
+      "slug": "lyudi-i-organizatsiya-vysokaya-tekuchest-lyudi-uhodyat",
+      "title": "Высокая текучесть, люди уходят",
+      "section": "ЛЮДИ И ОРГАНИЗАЦИЯ",
+      "reason": "Нужно найти системные причины ухода"
+    },
+    {
+      "slug": "lyudi-i-organizatsiya-ne-mozhem-nanyat-nuzhnyh-lyudey",
+      "title": "Не можем нанять нужных людей",
+      "section": "ЛЮДИ И ОРГАНИЗАЦИЯ",
+      "reason": "Проблема в привлечении или критериях отбора"
+    },
+    {
+      "slug": "lyudi-i-organizatsiya-komanda-ne-rabotaet-kak-edinitsa",
+      "title": "Команда не работает как единица",
+      "section": "ЛЮДИ И ОРГАНИЗАЦИЯ",
+      "reason": "Нет понимания ролей и стилей"
+    },
+    {
+      "slug": "lyudi-i-organizatsiya-sotrudniki-ne-initsiativny-zhdut-ukazaniy",
+      "title": "Сотрудники не инициативны, ждут указаний",
+      "section": "ЛЮДИ И ОРГАНИЗАЦИЯ",
+      "reason": "Проблема в культуре и безопасности"
+    },
+    {
+      "slug": "lyudi-i-organizatsiya-klyuchevoy-sotrudnik-uhodit-katastrofa",
+      "title": "Ключевой сотрудник уходит — катастрофа",
+      "section": "ЛЮДИ И ОРГАНИЗАЦИЯ",
+      "reason": "Нет системы преемственности"
+    },
+    {
+      "slug": "tehnologii-dannye-rassypany-po-tablitsam-net-edinoy-sistemy",
+      "title": "Данные рассыпаны по таблицам, нет единой системы",
+      "section": "ТЕХНОЛОГИИ",
+      "reason": "Нужна централизованная система учёта"
+    },
+    {
+      "slug": "tehnologii-vnedrili-crm-no-dannye-ne-vnosyatsya",
+      "title": "Внедрили CRM, но данные не вносятся",
+      "section": "ТЕХНОЛОГИИ",
+      "reason": "Проблема adoption, а не функционала системы"
+    },
+    {
+      "slug": "tehnologii-infrastruktura-ne-spravlyaetsya-s-rostom",
+      "title": "ИНФРАСТРУКТУРА не справляется с ростом",
+      "section": "ТЕХНОЛОГИИ",
+      "reason": "Нужна оценка и план модернизации"
+    },
+    {
+      "slug": "tehnologii-neponyatno-kakuyu-crm-erp-vybrat",
+      "title": "Непонятно какую CRM/ERP выбрать",
+      "section": "ТЕХНОЛОГИИ",
+      "reason": "Сначала процессы — потом система"
+    },
+    {
+      "slug": "tehnologii-boimsya-poteryat-dannye-kiberbezopasnost",
+      "title": "Боимся потерять данные / кибербезопасность",
+      "section": "ТЕХНОЛОГИИ",
+      "reason": "Нужна диагностика рисков и план защиты"
+    },
+    {
+      "slug": "dannye-i-analitika-prinimaem-resheniya-na-oschuscheniyah-net-dannyh",
+      "title": "Принимаем решения на ощущениях, нет данных",
+      "section": "ДАННЫЕ И АНАЛИТИКА",
+      "reason": "Нет системы измерений"
+    },
+    {
+      "slug": "dannye-i-analitika-otchety-est-no-neponyatno-chto-s-nimi-delat",
+      "title": "Отчёты есть, но непонятно что с ними делать",
+      "section": "ДАННЫЕ И АНАЛИТИКА",
+      "reason": "Метрики не привязаны к решениям"
+    },
+    {
+      "slug": "dannye-i-analitika-u-nas-mnogo-dannyh-no-net-analitiki",
+      "title": "У нас много данных, но нет аналитики",
+      "section": "ДАННЫЕ И АНАЛИТИКА",
+      "reason": "Данные есть, но не структурированы для анализа"
+    },
+    {
+      "slug": "dannye-i-analitika-ne-znaem-kakie-kpi-otslezhivat",
+      "title": "Не знаем какие KPI отслеживать",
+      "section": "ДАННЫЕ И АНАЛИТИКА",
+      "reason": "KPI должны вытекать из стратегии"
+    },
+    {
+      "slug": "finansy-pribyl-est-a-deneg-net",
+      "title": "Прибыль есть, а денег нет",
+      "section": "ФИНАНСЫ",
+      "reason": "Классический кассовый разрыв"
+    },
+    {
+      "slug": "finansy-ne-ponimaem-na-chem-realno-zarabatyvaem",
+      "title": "Не понимаем на чём реально зарабатываем",
+      "section": "ФИНАНСЫ",
+      "reason": "Нет разбивки по продуктам и каналам"
+    },
+    {
+      "slug": "finansy-net-byudzheta-rashody-nepredskazuemy",
+      "title": "Нет бюджета, расходы непредсказуемы",
+      "section": "ФИНАНСЫ",
+      "reason": "Нет финансового планирования"
+    },
+    {
+      "slug": "finansy-hotim-otsenit-biznes-dlya-prodazhi",
+      "title": "Хотим оценить бизнес для продажи",
+      "section": "ФИНАНСЫ",
+      "reason": "Нужна оценка стоимости с мультипликаторами"
+    },
+    {
+      "slug": "upravlenie-i-riski-konflikt-mezhdu-partnerami",
+      "title": "Конфликт между партнёрами",
+      "section": "УПРАВЛЕНИЕ И РИСКИ",
+      "reason": "Нужна фасилитация и формализация договорённостей"
+    },
+    {
+      "slug": "upravlenie-i-riski-sobstvennik-hochet-prodat-biznes-cherez-3-goda",
+      "title": "Собственник хочет продать бизнес через 3 года",
+      "section": "УПРАВЛЕНИЕ И РИСКИ",
+      "reason": "Нужно сделать бизнес независимым от личности"
+    },
+    {
+      "slug": "upravlenie-i-riski-ne-znaem-kakie-riski-ugrozhayut-biznesu",
+      "title": "Не знаем какие риски угрожают бизнесу",
+      "section": "УПРАВЛЕНИЕ И РИСКИ",
+      "reason": "Нет системы управления рисками"
+    },
+    {
+      "slug": "upravlenie-i-riski-investor-trebuet-poryadka-v-upravlenii",
+      "title": "Инвестор требует порядка в управлении",
+      "section": "УПРАВЛЕНИЕ И РИСКИ",
+      "reason": "Нужно выстроить прозрачное корпоративное управление"
+    },
+    {
+      "slug": "transformatsiya-vnedryaem-chto-to-novoe-cherez-mesyats-vse-po-staromu",
+      "title": "Внедряем что-то новое — через месяц всё по-старому",
+      "section": "ТРАНСФОРМАЦИЯ",
+      "reason": "Изменения не закрепляются — нужна методология"
+    },
+    {
+      "slug": "transformatsiya-komanda-soprotivlyaetsya-izmeneniyam",
+      "title": "Команда сопротивляется изменениям",
+      "section": "ТРАНСФОРМАЦИЯ",
+      "reason": "Нужна диагностика источников сопротивления"
+    },
+    {
+      "slug": "transformatsiya-vnedrili-crm-nikto-ne-polzuetsya",
+      "title": "Внедрили CRM, никто не пользуется",
+      "section": "ТРАНСФОРМАЦИЯ",
+      "reason": "Проблема adoption — не техническая"
+    },
+    {
+      "slug": "transformatsiya-hotim-provesti-reorganizatsiyu",
+      "title": "Хотим провести реорганизацию",
+      "section": "ТРАНСФОРМАЦИЯ",
+      "reason": "Комплексные изменения требуют системного подхода"
+    }
+  ],
+  "symptomToolMap": [
+    {
+      "symptom_slug": "vneshnyaya-sreda-ne-ponimaem-chto-proishodit-na-rynke",
+      "tool_slug": "pestel",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "vneshnyaya-sreda-ne-ponimaem-chto-proishodit-na-rynke",
+      "tool_slug": "porters-five-forces",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "vneshnyaya-sreda-ne-ponimaem-chto-proishodit-na-rynke",
+      "tool_slug": "analiz-konkurentov",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "vneshnyaya-sreda-sanktsii-regulyatorika-udarili-po-biznesu",
+      "tool_slug": "pestel",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "vneshnyaya-sreda-sanktsii-regulyatorika-udarili-po-biznesu",
+      "tool_slug": "stsenarnoe-planirovanie",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "vneshnyaya-sreda-sanktsii-regulyatorika-udarili-po-biznesu",
+      "tool_slug": "bcp",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "vneshnyaya-sreda-ne-znaem-naskolko-velik-nash-rynok",
+      "tool_slug": "tam-sam-som",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "vneshnyaya-sreda-ne-znaem-naskolko-velik-nash-rynok",
+      "tool_slug": "analiz-konkurentov",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "vneshnyaya-sreda-ne-ponimaem-pochemu-klienty-vybirayut-konkurentov",
+      "tool_slug": "porters-five-forces",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "vneshnyaya-sreda-ne-ponimaem-pochemu-klienty-vybirayut-konkurentov",
+      "tool_slug": "win-loss-analysis",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "vneshnyaya-sreda-ne-ponimaem-pochemu-klienty-vybirayut-konkurentov",
+      "tool_slug": "cjm",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "strategiya-my-ne-ponimaem-kuda-idem",
+      "tool_slug": "vision-statement",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "strategiya-my-ne-ponimaem-kuda-idem",
+      "tool_slug": "strategicheskaya-sessiya",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "strategiya-u-nas-net-strategii",
+      "tool_slug": "pestel",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "strategiya-u-nas-net-strategii",
+      "tool_slug": "swot",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "strategiya-u-nas-net-strategii",
+      "tool_slug": "strategicheskaya-sessiya",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "strategiya-u-nas-net-strategii",
+      "tool_slug": "roadmap",
+      "priority": 4
+    },
+    {
+      "symptom_slug": "strategiya-strategiya-est-no-nikto-ee-ne-vypolnyaet",
+      "tool_slug": "okr",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "strategiya-strategiya-est-no-nikto-ee-ne-vypolnyaet",
+      "tool_slug": "bsc",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "strategiya-strategiya-est-no-nikto-ee-ne-vypolnyaet",
+      "tool_slug": "hoshin-kanri",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "strategiya-neponyatno-na-kakom-rynke-nam-rasti",
+      "tool_slug": "ansoff",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "strategiya-neponyatno-na-kakom-rynke-nam-rasti",
+      "tool_slug": "tam-sam-som",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "strategiya-neponyatno-na-kakom-rynke-nam-rasti",
+      "tool_slug": "three-horizons",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "strategiya-konkurenty-nas-dogonyayut",
+      "tool_slug": "porters-five-forces",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "strategiya-konkurenty-nas-dogonyayut",
+      "tool_slug": "vrio",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "strategiya-konkurenty-nas-dogonyayut",
+      "tool_slug": "blue-ocean-strategy",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "strategiya-ne-ponimaem-svoyu-biznes-model",
+      "tool_slug": "business-model-canvas",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "strategiya-ne-ponimaem-svoyu-biznes-model",
+      "tool_slug": "jtbd",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "kommertsiya-prodazhi-nestabilny-zavisyat-ot-odnogo-cheloveka",
+      "tool_slug": "audit-prodazh",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "kommertsiya-prodazhi-nestabilny-zavisyat-ot-odnogo-cheloveka",
+      "tool_slug": "voronka",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "kommertsiya-prodazhi-nestabilny-zavisyat-ot-odnogo-cheloveka",
+      "tool_slug": "skripty",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "kommertsiya-prodazhi-nestabilny-zavisyat-ot-odnogo-cheloveka",
+      "tool_slug": "kpi",
+      "priority": 4
+    },
+    {
+      "symptom_slug": "kommertsiya-ne-znaem-skolko-stoit-privlech-klienta",
+      "tool_slug": "cac",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "kommertsiya-ne-znaem-skolko-stoit-privlech-klienta",
+      "tool_slug": "romi",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "kommertsiya-ne-znaem-skolko-stoit-privlech-klienta",
+      "tool_slug": "ltv",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "kommertsiya-marketingovyy-byudzhet-tratim-no-ne-ponimaem-otdachu",
+      "tool_slug": "romi",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "kommertsiya-marketingovyy-byudzhet-tratim-no-ne-ponimaem-otdachu",
+      "tool_slug": "cac-po-kanalam",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "kommertsiya-marketingovyy-byudzhet-tratim-no-ne-ponimaem-otdachu",
+      "tool_slug": "plan-fakt-analiz",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "kommertsiya-klienty-uhodyat-k-konkurentam",
+      "tool_slug": "nps",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "kommertsiya-klienty-uhodyat-k-konkurentam",
+      "tool_slug": "cjm",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "kommertsiya-klienty-uhodyat-k-konkurentam",
+      "tool_slug": "win-loss-analysis",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "kommertsiya-ne-mozhem-sformulirovat-chem-otlichaemsya",
+      "tool_slug": "stp",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "kommertsiya-ne-mozhem-sformulirovat-chem-otlichaemsya",
+      "tool_slug": "vrio",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "kommertsiya-ne-mozhem-sformulirovat-chem-otlichaemsya",
+      "tool_slug": "brand-audit",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "kommertsiya-ne-mozhem-sformulirovat-chem-otlichaemsya",
+      "tool_slug": "business-model-canvas",
+      "priority": 4
+    },
+    {
+      "symptom_slug": "kommertsiya-menedzhery-prodayut-ploho",
+      "tool_slug": "spin-selling",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "kommertsiya-menedzhery-prodayut-ploho",
+      "tool_slug": "challenger-sale",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "kommertsiya-menedzhery-prodayut-ploho",
+      "tool_slug": "razbor-sdelok",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "operatsionnaya-model-vse-derzhitsya-na-konkretnyh-lyudyah",
+      "tool_slug": "kartirovanie-protsessov",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "operatsionnaya-model-vse-derzhitsya-na-konkretnyh-lyudyah",
+      "tool_slug": "reglamenty",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "operatsionnaya-model-vse-derzhitsya-na-konkretnyh-lyudyah",
+      "tool_slug": "vladeltsy-protsessov",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "operatsionnaya-model-mnogo-oshibok-i-peredelok",
+      "tool_slug": "bottleneck-analysis",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "operatsionnaya-model-mnogo-oshibok-i-peredelok",
+      "tool_slug": "six-sigma",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "operatsionnaya-model-mnogo-oshibok-i-peredelok",
+      "tool_slug": "kaizen",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "operatsionnaya-model-protsessy-est-no-ih-ne-soblyudayut",
+      "tool_slug": "kulturnyy-audit",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "operatsionnaya-model-protsessy-est-no-ih-ne-soblyudayut",
+      "tool_slug": "adkar",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "operatsionnaya-model-protsessy-est-no-ih-ne-soblyudayut",
+      "tool_slug": "rabota-s-soprotivleniem",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "operatsionnaya-model-neponyatno-s-chego-nachat-avtomatizatsiyu",
+      "tool_slug": "kartirovanie-protsessov",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "operatsionnaya-model-neponyatno-s-chego-nachat-avtomatizatsiyu",
+      "tool_slug": "prioritizatsiya-avtomatizatsii",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "operatsionnaya-model-neponyatno-s-chego-nachat-avtomatizatsiyu",
+      "tool_slug": "digital-roadmap",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "operatsionnaya-model-kazhdyy-otdel-rabotaet-v-svoem-ritme",
+      "tool_slug": "regulyarnyy-menedzhment",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "operatsionnaya-model-kazhdyy-otdel-rabotaet-v-svoem-ritme",
+      "tool_slug": "okr",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "operatsionnaya-model-kazhdyy-otdel-rabotaet-v-svoem-ritme",
+      "tool_slug": "ritm-vstrech",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "lyudi-i-organizatsiya-vse-cherez-menya-ne-mogu-uyti-v-otpusk",
+      "tool_slug": "audit-roli",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "lyudi-i-organizatsiya-vse-cherez-menya-ne-mogu-uyti-v-otpusk",
+      "tool_slug": "matritsa-polnomochiy",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "lyudi-i-organizatsiya-vse-cherez-menya-ne-mogu-uyti-v-otpusk",
+      "tool_slug": "founders-mentality",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "lyudi-i-organizatsiya-nanyal-menedzherov-no-oni-ne-spravlyayutsya",
+      "tool_slug": "9-box-grid",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "lyudi-i-organizatsiya-nanyal-menedzherov-no-oni-ne-spravlyayutsya",
+      "tool_slug": "profili-dolzhnostey",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "lyudi-i-organizatsiya-nanyal-menedzherov-no-oni-ne-spravlyayutsya",
+      "tool_slug": "ipr",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "lyudi-i-organizatsiya-resheniya-prinimayutsya-slishkom-medlenno",
+      "tool_slug": "matritsa-polnomochiy",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "lyudi-i-organizatsiya-resheniya-prinimayutsya-slishkom-medlenno",
+      "tool_slug": "raci",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "lyudi-i-organizatsiya-resheniya-prinimayutsya-slishkom-medlenno",
+      "tool_slug": "upravlyayuschiy-komitet",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "lyudi-i-organizatsiya-neponyatno-kto-za-chto-otvechaet",
+      "tool_slug": "raci",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "lyudi-i-organizatsiya-neponyatno-kto-za-chto-otvechaet",
+      "tool_slug": "profili-dolzhnostey",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "lyudi-i-organizatsiya-neponyatno-kto-za-chto-otvechaet",
+      "tool_slug": "dizayn-orgstruktury",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "lyudi-i-organizatsiya-kompaniya-rastet-nachalsya-haos",
+      "tool_slug": "model-adizesa",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "lyudi-i-organizatsiya-kompaniya-rastet-nachalsya-haos",
+      "tool_slug": "galbraith-star-model",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "lyudi-i-organizatsiya-kompaniya-rastet-nachalsya-haos",
+      "tool_slug": "dizayn-struktury",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "lyudi-i-organizatsiya-vysokaya-tekuchest-lyudi-uhodyat",
+      "tool_slug": "enps",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "lyudi-i-organizatsiya-vysokaya-tekuchest-lyudi-uhodyat",
+      "tool_slug": "kulturnyy-audit",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "lyudi-i-organizatsiya-vysokaya-tekuchest-lyudi-uhodyat",
+      "tool_slug": "exit-analiz",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "lyudi-i-organizatsiya-vysokaya-tekuchest-lyudi-uhodyat",
+      "tool_slug": "greydy",
+      "priority": 4
+    },
+    {
+      "symptom_slug": "lyudi-i-organizatsiya-ne-mozhem-nanyat-nuzhnyh-lyudey",
+      "tool_slug": "employer-branding",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "lyudi-i-organizatsiya-ne-mozhem-nanyat-nuzhnyh-lyudey",
+      "tool_slug": "profil-kandidata",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "lyudi-i-organizatsiya-ne-mozhem-nanyat-nuzhnyh-lyudey",
+      "tool_slug": "voronka-nayma",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "lyudi-i-organizatsiya-komanda-ne-rabotaet-kak-edinitsa",
+      "tool_slug": "disc",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "lyudi-i-organizatsiya-komanda-ne-rabotaet-kak-edinitsa",
+      "tool_slug": "belbin",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "lyudi-i-organizatsiya-komanda-ne-rabotaet-kak-edinitsa",
+      "tool_slug": "komandnye-dogovorennosti",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "lyudi-i-organizatsiya-sotrudniki-ne-initsiativny-zhdut-ukazaniy",
+      "tool_slug": "enps",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "lyudi-i-organizatsiya-sotrudniki-ne-initsiativny-zhdut-ukazaniy",
+      "tool_slug": "kulturnyy-audit",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "lyudi-i-organizatsiya-sotrudniki-ne-initsiativny-zhdut-ukazaniy",
+      "tool_slug": "psihologicheskaya-bezopasnost",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "lyudi-i-organizatsiya-klyuchevoy-sotrudnik-uhodit-katastrofa",
+      "tool_slug": "succession-planning",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "lyudi-i-organizatsiya-klyuchevoy-sotrudnik-uhodit-katastrofa",
+      "tool_slug": "kadrovyy-rezerv",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "lyudi-i-organizatsiya-klyuchevoy-sotrudnik-uhodit-katastrofa",
+      "tool_slug": "reglamenty",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "tehnologii-dannye-rassypany-po-tablitsam-net-edinoy-sistemy",
+      "tool_slug": "crm-erp-audit",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "tehnologii-dannye-rassypany-po-tablitsam-net-edinoy-sistemy",
+      "tool_slug": "vybor-sistemy",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "tehnologii-dannye-rassypany-po-tablitsam-net-edinoy-sistemy",
+      "tool_slug": "digital-roadmap",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "tehnologii-vnedrili-crm-no-dannye-ne-vnosyatsya",
+      "tool_slug": "adkar",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "tehnologii-vnedrili-crm-no-dannye-ne-vnosyatsya",
+      "tool_slug": "obuchenie",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "tehnologii-vnedrili-crm-no-dannye-ne-vnosyatsya",
+      "tool_slug": "geymifikatsiya",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "tehnologii-vnedrili-crm-no-dannye-ne-vnosyatsya",
+      "tool_slug": "kpi-zapolneniya",
+      "priority": 4
+    },
+    {
+      "symptom_slug": "tehnologii-infrastruktura-ne-spravlyaetsya-s-rostom",
+      "tool_slug": "it-audit",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "tehnologii-infrastruktura-ne-spravlyaetsya-s-rostom",
+      "tool_slug": "arhitektura-resheniya",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "tehnologii-infrastruktura-ne-spravlyaetsya-s-rostom",
+      "tool_slug": "digital-roadmap",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "tehnologii-neponyatno-kakuyu-crm-erp-vybrat",
+      "tool_slug": "kartirovanie-protsessov",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "tehnologii-neponyatno-kakuyu-crm-erp-vybrat",
+      "tool_slug": "tehzadanie",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "tehnologii-neponyatno-kakuyu-crm-erp-vybrat",
+      "tool_slug": "make-vs-buy-analiz",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "tehnologii-boimsya-poteryat-dannye-kiberbezopasnost",
+      "tool_slug": "it-audit",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "tehnologii-boimsya-poteryat-dannye-kiberbezopasnost",
+      "tool_slug": "ib-audit",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "tehnologii-boimsya-poteryat-dannye-kiberbezopasnost",
+      "tool_slug": "bcp",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "dannye-i-analitika-prinimaem-resheniya-na-oschuscheniyah-net-dannyh",
+      "tool_slug": "kpi-derevo",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "dannye-i-analitika-prinimaem-resheniya-na-oschuscheniyah-net-dannyh",
+      "tool_slug": "bi-dashbordy",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "dannye-i-analitika-prinimaem-resheniya-na-oschuscheniyah-net-dannyh",
+      "tool_slug": "upravlencheskaya-otchetnost",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "dannye-i-analitika-otchety-est-no-neponyatno-chto-s-nimi-delat",
+      "tool_slug": "kpi-derevo",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "dannye-i-analitika-otchety-est-no-neponyatno-chto-s-nimi-delat",
+      "tool_slug": "glossariy-metrik",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "dannye-i-analitika-otchety-est-no-neponyatno-chto-s-nimi-delat",
+      "tool_slug": "ritm-vstrech",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "dannye-i-analitika-u-nas-mnogo-dannyh-no-net-analitiki",
+      "tool_slug": "audit-dannyh",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "dannye-i-analitika-u-nas-mnogo-dannyh-no-net-analitiki",
+      "tool_slug": "data-governance",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "dannye-i-analitika-u-nas-mnogo-dannyh-no-net-analitiki",
+      "tool_slug": "bi-strategiya",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "dannye-i-analitika-ne-znaem-kakie-kpi-otslezhivat",
+      "tool_slug": "kpi-derevo",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "dannye-i-analitika-ne-znaem-kakie-kpi-otslezhivat",
+      "tool_slug": "strategiya",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "dannye-i-analitika-ne-znaem-kakie-kpi-otslezhivat",
+      "tool_slug": "okr",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "finansy-pribyl-est-a-deneg-net",
+      "tool_slug": "cash-flow",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "finansy-pribyl-est-a-deneg-net",
+      "tool_slug": "working-capital-management",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "finansy-pribyl-est-a-deneg-net",
+      "tool_slug": "p-l",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "finansy-ne-ponimaem-na-chem-realno-zarabatyvaem",
+      "tool_slug": "yunit-ekonomika",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "finansy-ne-ponimaem-na-chem-realno-zarabatyvaem",
+      "tool_slug": "p-l-po-produktam-klientam",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "finansy-net-byudzheta-rashody-nepredskazuemy",
+      "tool_slug": "byudzhetirovanie",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "finansy-net-byudzheta-rashody-nepredskazuemy",
+      "tool_slug": "p-l",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "finansy-net-byudzheta-rashody-nepredskazuemy",
+      "tool_slug": "plan-fakt-analiz",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "finansy-hotim-otsenit-biznes-dlya-prodazhi",
+      "tool_slug": "ebitda",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "finansy-hotim-otsenit-biznes-dlya-prodazhi",
+      "tool_slug": "dcf",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "finansy-hotim-otsenit-biznes-dlya-prodazhi",
+      "tool_slug": "finansovaya-model",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "upravlenie-i-riski-konflikt-mezhdu-partnerami",
+      "tool_slug": "partnerskaya-sessiya",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "upravlenie-i-riski-konflikt-mezhdu-partnerami",
+      "tool_slug": "sha",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "upravlenie-i-riski-konflikt-mezhdu-partnerami",
+      "tool_slug": "raspredelenie-roley",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "upravlenie-i-riski-sobstvennik-hochet-prodat-biznes-cherez-3-goda",
+      "tool_slug": "succession-planning",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "upravlenie-i-riski-sobstvennik-hochet-prodat-biznes-cherez-3-goda",
+      "tool_slug": "upravlyayuschiy-komitet",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "upravlenie-i-riski-sobstvennik-hochet-prodat-biznes-cherez-3-goda",
+      "tool_slug": "bsc",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "upravlenie-i-riski-ne-znaem-kakie-riski-ugrozhayut-biznesu",
+      "tool_slug": "karta-riskov",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "upravlenie-i-riski-ne-znaem-kakie-riski-ugrozhayut-biznesu",
+      "tool_slug": "risk-register",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "upravlenie-i-riski-ne-znaem-kakie-riski-ugrozhayut-biznesu",
+      "tool_slug": "bcp",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "upravlenie-i-riski-investor-trebuet-poryadka-v-upravlenii",
+      "tool_slug": "korporativnye-reglamenty",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "upravlenie-i-riski-investor-trebuet-poryadka-v-upravlenii",
+      "tool_slug": "sovet-direktorov",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "upravlenie-i-riski-investor-trebuet-poryadka-v-upravlenii",
+      "tool_slug": "sha",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "transformatsiya-vnedryaem-chto-to-novoe-cherez-mesyats-vse-po-staromu",
+      "tool_slug": "adkar",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "transformatsiya-vnedryaem-chto-to-novoe-cherez-mesyats-vse-po-staromu",
+      "tool_slug": "rabota-s-soprotivleniem",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "transformatsiya-vnedryaem-chto-to-novoe-cherez-mesyats-vse-po-staromu",
+      "tool_slug": "regulyarnyy-menedzhment",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "transformatsiya-komanda-soprotivlyaetsya-izmeneniyam",
+      "tool_slug": "karta-steykholderov",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "transformatsiya-komanda-soprotivlyaetsya-izmeneniyam",
+      "tool_slug": "force-field-analysis",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "transformatsiya-komanda-soprotivlyaetsya-izmeneniyam",
+      "tool_slug": "adkar",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "transformatsiya-vnedrili-crm-nikto-ne-polzuetsya",
+      "tool_slug": "adkar",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "transformatsiya-vnedrili-crm-nikto-ne-polzuetsya",
+      "tool_slug": "rabota-s-soprotivleniem",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "transformatsiya-vnedrili-crm-nikto-ne-polzuetsya",
+      "tool_slug": "obuchenie-polzovateley",
+      "priority": 3
+    },
+    {
+      "symptom_slug": "transformatsiya-hotim-provesti-reorganizatsiyu",
+      "tool_slug": "mckinsey-7s",
+      "priority": 1
+    },
+    {
+      "symptom_slug": "transformatsiya-hotim-provesti-reorganizatsiyu",
+      "tool_slug": "nadler-tushman",
+      "priority": 2
+    },
+    {
+      "symptom_slug": "transformatsiya-hotim-provesti-reorganizatsiyu",
+      "tool_slug": "kotter-8-shagov",
+      "priority": 3
+    }
+  ]
+}
