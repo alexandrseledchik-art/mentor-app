@@ -37,7 +37,7 @@ function mapQuestionSet(row: QuestionSetRow): DiagnosisQuestionSet {
     id: row.id,
     code: row.code,
     title: row.title,
-    description: row.description,
+    description: row.description ?? null,
     version: row.version,
     isActive: row.is_active,
     createdAt: row.created_at,
@@ -45,6 +45,15 @@ function mapQuestionSet(row: QuestionSetRow): DiagnosisQuestionSet {
 }
 
 function mapQuestion(row: QuestionRow): DiagnosisQuestion {
+  const meta =
+    row.meta && typeof row.meta === "object" && !Array.isArray(row.meta)
+      ? (row.meta as Record<string, unknown>)
+      : {};
+  const fallbackOptions = Array.isArray(meta.options) ? meta.options : [];
+  const fallbackWeight = typeof meta.weight === "number" ? meta.weight : 1;
+  const parsedOptions = parseQuestionOptions(row.options);
+  const parsedFallbackOptions = parseQuestionOptions(fallbackOptions);
+
   return {
     id: row.id,
     questionSetId: row.question_set_id,
@@ -56,12 +65,9 @@ function mapQuestion(row: QuestionRow): DiagnosisQuestion {
     orderIndex: row.order_index ?? row.position,
     inputType: (row.input_type === "single_select" ? "single_select" : "scale"),
     isRequired: row.is_required,
-    options: parseQuestionOptions(row.options),
-    weight: row.weight ?? 1,
-    meta:
-      row.meta && typeof row.meta === "object" && !Array.isArray(row.meta)
-        ? (row.meta as Record<string, unknown>)
-        : {},
+    options: parsedOptions.length > 0 ? parsedOptions : parsedFallbackOptions,
+    weight: row.weight ?? fallbackWeight,
+    meta,
     createdAt: row.created_at,
   };
 }
@@ -98,23 +104,38 @@ async function ensureExpressQuestionSet() {
   let questionSet = existingQuestionSet;
 
   if (!questionSet) {
-    const { data: createdQuestionSet, error: createSetError } = await supabase
+    const createPayload = {
+      code: "express_v1",
+      title: "Экспресс диагностика",
+      description: "Быстрая оценка состояния бизнеса",
+      version: 1,
+      is_active: true,
+    };
+
+    let createResult = await supabase
       .from("diagnosis_question_sets")
-      .insert({
-        code: "express_v1",
-        title: "Экспресс диагностика",
-        description: "Быстрая оценка состояния бизнеса",
-        version: 1,
-        is_active: true,
-      })
+      .insert(createPayload)
       .select("*")
       .single();
 
-    if (createSetError || !createdQuestionSet) {
-      throw createSetError ?? new Error("Failed to create express question set.");
+    if (createResult.error) {
+      createResult = await supabase
+        .from("diagnosis_question_sets")
+        .insert({
+          code: "express_v1",
+          title: "Экспресс диагностика",
+          version: 1,
+          is_active: true,
+        })
+        .select("*")
+        .single();
     }
 
-    questionSet = createdQuestionSet;
+    if (createResult.error || !createResult.data) {
+      throw createResult.error ?? new Error("Failed to create express question set.");
+    }
+
+    questionSet = createResult.data;
   }
 
   const { data: existingQuestions, error: existingQuestionsError } = await supabase
@@ -130,7 +151,7 @@ async function ensureExpressQuestionSet() {
   if (!existingQuestions || existingQuestions.length === 0) {
     const seedQuestions = diagnosisQuestionsSeed as SeedQuestion[];
 
-    const { error: insertQuestionsError } = await supabase
+    let insertResult = await supabase
       .from("diagnosis_questions")
       .upsert(
         seedQuestions.map((question, index) => ({
@@ -155,8 +176,33 @@ async function ensureExpressQuestionSet() {
         { onConflict: "code" },
       );
 
-    if (insertQuestionsError) {
-      throw insertQuestionsError;
+    if (insertResult.error) {
+      insertResult = await supabase
+        .from("diagnosis_questions")
+        .upsert(
+          seedQuestions.map((question, index) => ({
+            question_set_id: questionSet.id,
+            code: question.question_code,
+            title: question.question_text,
+            dimension: question.dimension,
+            position: index + 1,
+            input_type: "single_select",
+            is_required: true,
+            meta: {
+              source: "express_ui_seed_fallback",
+              weight: question.weight,
+              options: question.options.map((option) => ({
+                value: option.level,
+                label: option.text,
+              })),
+            },
+          })),
+          { onConflict: "code" },
+        );
+    }
+
+    if (insertResult.error) {
+      throw insertResult.error;
     }
   }
 
@@ -195,7 +241,14 @@ async function loadQuestionSet(code: string) {
 }
 
 export async function GET() {
-  const result = await loadQuestionSet("express_v1");
+  let result;
+
+  try {
+    result = await loadQuestionSet("express_v1");
+  } catch (error) {
+    console.error("DIAGNOSIS START GET ERROR:", error);
+    return NextResponse.json({ error: "Failed to load diagnosis questions." }, { status: 500 });
+  }
 
   if ("error" in result) {
     return NextResponse.json({ error: result.error }, { status: 404 });
@@ -221,7 +274,14 @@ export async function POST(request: Request) {
   }
 
   const { companyId, questionSetCode = "express_v1" } = parsed.data;
-  const questionSetResult = await loadQuestionSet(questionSetCode);
+  let questionSetResult;
+
+  try {
+    questionSetResult = await loadQuestionSet(questionSetCode);
+  } catch (error) {
+    console.error("DIAGNOSIS START POST ERROR:", error);
+    return NextResponse.json({ error: "Failed to prepare diagnosis session." }, { status: 500 });
+  }
 
   if ("error" in questionSetResult) {
     return NextResponse.json({ error: questionSetResult.error }, { status: 404 });

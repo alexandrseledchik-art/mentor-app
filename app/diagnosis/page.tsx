@@ -23,6 +23,15 @@ export default function DiagnosisPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  async function readApiError(response: Response, fallbackMessage: string) {
+    try {
+      const data = (await response.json()) as { error?: string };
+      return data.error || fallbackMessage;
+    } catch {
+      return fallbackMessage;
+    }
+  }
+
   useEffect(() => {
     async function loadData() {
       try {
@@ -36,8 +45,23 @@ export default function DiagnosisPage() {
           return;
         }
 
-        if (!dashboardResponse.ok || !startResponse.ok) {
-          alert("Не удалось загрузить диагностику.");
+        if (!dashboardResponse.ok) {
+          alert(
+            await readApiError(
+              dashboardResponse,
+              "Не удалось загрузить данные компании.",
+            ),
+          );
+          return;
+        }
+
+        if (!startResponse.ok) {
+          alert(
+            await readApiError(
+              startResponse,
+              "Не удалось загрузить диагностику.",
+            ),
+          );
           return;
         }
 
