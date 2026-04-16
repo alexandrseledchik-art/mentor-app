@@ -28,8 +28,13 @@ export async function POST(request: Request) {
     .single();
 
   if (userError || !user) {
+    console.error("USER ERROR FULL:", JSON.stringify(userError, null, 2));
+
     return NextResponse.json(
-      { error: "Не удалось создать пользователя для онбординга." },
+      {
+        error: "USER ERROR",
+        details: userError,
+      },
       { status: 500 },
     );
   }
@@ -49,8 +54,13 @@ export async function POST(request: Request) {
     .single();
 
   if (companyError || !company) {
+    console.error("COMPANY ERROR:", companyError);
+
     return NextResponse.json(
-      { error: "Не удалось создать компанию." },
+      {
+        error: companyError?.message || "Ошибка создания компании",
+        details: companyError,
+      },
       { status: 500 },
     );
   }
