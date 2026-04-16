@@ -4,15 +4,18 @@ import {
   buildDiagnosisSummary,
   calculateDimensionScores,
 } from "@/lib/diagnosis/summary";
+import { generateDiagnosisAiSummary } from "@/lib/diagnosis/ai-summary";
 import { parseQuestionOptions } from "@/lib/diagnosis/mappers";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import type { DiagnosisResultResponse } from "@/types/api";
 import type { Database } from "@/types/db";
 import type {
   DiagnosisAnswerInput,
+  Company,
   DiagnosisQuestion,
   DiagnosisQuestionSet,
   RecommendedTool,
+  DiagnosisSummaryContext,
   DiagnosisSession,
 } from "@/types/domain";
 import { diagnosisResultResponseSchema } from "@/validators/diagnosis";
@@ -24,6 +27,7 @@ type AnswerRow = Database["public"]["Tables"]["diagnosis_answers"]["Row"];
 type SymptomRow = Database["public"]["Tables"]["symptoms"]["Row"];
 type SymptomToolMapRow = Database["public"]["Tables"]["symptom_tool_map"]["Row"];
 type ToolRow = Database["public"]["Tables"]["tools"]["Row"];
+type CompanyRow = Database["public"]["Tables"]["companies"]["Row"];
 
 const dimensionSectionMap: Record<string, string> = {
   owner: "УПРАВЛЕНИЕ И РИСКИ",
@@ -37,6 +41,20 @@ const dimensionSectionMap: Record<string, string> = {
   governance: "УПРАВЛЕНИЕ И РИСКИ",
   technology: "ТЕХНОЛОГИИ",
   data: "ДАННЫЕ И АНАЛИТИКА",
+};
+
+const dimensionLabelMap: Record<string, string> = {
+  owner: "Роль собственника",
+  external_environment: "Внешняя среда и рынок",
+  strategy: "Стратегия и направление",
+  product: "Продукт",
+  commercial: "Коммерция",
+  operations: "Операции",
+  finance: "Финансы",
+  team: "Команда",
+  governance: "Управление и принятие решений",
+  technology: "Технологии",
+  data: "Данные и аналитика",
 };
 
 function mapQuestionSet(row: QuestionSetRow): DiagnosisQuestionSet {
@@ -97,6 +115,22 @@ function mapAnswer(row: AnswerRow): DiagnosisAnswerInput {
   };
 }
 
+function mapCompany(row: CompanyRow): Company {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    name: row.name,
+    industry: row.industry,
+    teamSize: row.team_size,
+    revenueRange: row.revenue_range,
+    description: row.description,
+    primaryGoal: row.primary_goal,
+    onboardingCompleted: row.onboarding_completed,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
 function mapRecommendedTool(row: ToolRow, whyRecommended: string): RecommendedTool {
   return {
     id: row.id,
@@ -111,12 +145,14 @@ function mapRecommendedTool(row: ToolRow, whyRecommended: string): RecommendedTo
 async function loadRecommendedTools(params: {
   dimensionScores: Array<{ dimension: string; averageScore: number }>;
 }) {
+  const weakestDimensions = params.dimensionScores
+    .filter((item) => item.averageScore <= 2)
+    .slice()
+    .sort((a, b) => a.averageScore - b.averageScore);
+
   const sections = Array.from(
     new Set(
-      params.dimensionScores
-        .filter((item) => item.averageScore <= 2)
-        .map((item) => dimensionSectionMap[item.dimension])
-        .filter(Boolean),
+      weakestDimensions.map((item) => dimensionSectionMap[item.dimension]).filter(Boolean),
     ),
   );
 
@@ -147,6 +183,15 @@ async function loadRecommendedTools(params: {
   }
 
   const orderedMappings = mappings as SymptomToolMapRow[];
+  const dimensionOrder = new Map(
+    weakestDimensions.map((item, index) => [dimensionSectionMap[item.dimension], index]),
+  );
+  const orderedSymptoms = (symptoms as SymptomRow[]).slice().sort((a, b) => {
+    const aIndex = dimensionOrder.get(a.section) ?? 999;
+    const bIndex = dimensionOrder.get(b.section) ?? 999;
+    return aIndex - bIndex;
+  });
+  const orderedSymptomIds = orderedSymptoms.map((item) => item.id);
   const toolIds = Array.from(new Set(orderedMappings.map((item) => item.tool_id)));
   const { data: tools, error: toolsError } = await supabase
     .from("tools")
@@ -158,9 +203,20 @@ async function loadRecommendedTools(params: {
   }
 
   const toolById = new Map((tools as ToolRow[]).map((tool) => [tool.id, tool]));
+  const symptomOrder = new Map(orderedSymptomIds.map((id, index) => [id, index]));
+  const sortedMappings = orderedMappings.slice().sort((a, b) => {
+    const aSymptomOrder = symptomOrder.get(a.symptom_id) ?? 999;
+    const bSymptomOrder = symptomOrder.get(b.symptom_id) ?? 999;
+
+    if (aSymptomOrder !== bSymptomOrder) {
+      return aSymptomOrder - bSymptomOrder;
+    }
+
+    return a.priority - b.priority;
+  });
   const recommended: RecommendedTool[] = [];
 
-  for (const mapping of orderedMappings) {
+  for (const mapping of sortedMappings) {
     const tool = toolById.get(mapping.tool_id);
     const symptom = symptomById.get(mapping.symptom_id);
 
@@ -175,7 +231,15 @@ async function loadRecommendedTools(params: {
     recommended.push(
       mapRecommendedTool(
         tool,
-        symptom?.reason || "Этот инструмент связан с одной из самых слабых зон диагностики.",
+        `Рекомендован, потому что у вас проседает контур «${
+          dimensionLabelMap[
+            weakestDimensions.find((item) => dimensionSectionMap[item.dimension] === symptom?.section)
+              ?.dimension ?? ""
+          ] ?? "эта зона"
+        }», а этот инструмент помогает ${
+          (symptom?.reason ?? "навести базовую управляемость в проблемной зоне").charAt(0).toLowerCase() +
+          (symptom?.reason ?? "навести базовую управляемость в проблемной зоне").slice(1)
+        }.`,
       ),
     );
 
@@ -185,6 +249,43 @@ async function loadRecommendedTools(params: {
   }
 
   return recommended;
+}
+
+function buildSummaryContext(params: {
+  dimensionScores: Array<{ dimension: string; averageScore: number }>;
+  summary: DiagnosisResultResponse["summary"];
+  tools: RecommendedTool[];
+  company: Company | null;
+}): DiagnosisSummaryContext {
+  const sortedScores = params.dimensionScores.slice().sort((a, b) => a.averageScore - b.averageScore);
+  const weakestDomains = sortedScores
+    .filter((item) => item.averageScore <= 2)
+    .map((item) => item.dimension);
+  const strongestDomains = params.dimensionScores
+    .slice()
+    .sort((a, b) => b.averageScore - a.averageScore)
+    .slice(0, 2)
+    .map((item) => item.dimension);
+
+  return {
+    weakestDomains,
+    strongestDomains,
+    topProblems: params.summary.risks,
+    recommendedTools: params.tools.map((tool) => ({
+      title: tool.title,
+      whyRecommended: tool.whyRecommended,
+    })),
+    company: params.company
+      ? {
+          id: params.company.id,
+          name: params.company.name,
+          industry: params.company.industry,
+          teamSize: params.company.teamSize,
+          revenueRange: params.company.revenueRange,
+          primaryGoal: params.company.primaryGoal,
+        }
+      : null,
+  };
 }
 
 export async function GET(
@@ -204,7 +305,12 @@ export async function GET(
     return NextResponse.json({ error: "Diagnosis session not found." }, { status: 404 });
   }
 
-  const [{ data: questionSet, error: setError }, { data: questions, error: questionsError }, { data: answers, error: answersError }] =
+  const [
+    { data: questionSet, error: setError },
+    { data: questions, error: questionsError },
+    { data: answers, error: answersError },
+    { data: company },
+  ] =
     await Promise.all([
       supabase
         .from("diagnosis_question_sets")
@@ -221,6 +327,11 @@ export async function GET(
         .from("diagnosis_answers")
         .select("*")
         .eq("diagnosis_session_id", session.id),
+      supabase
+        .from("companies")
+        .select("*")
+        .eq("id", session.company_id)
+        .maybeSingle(),
     ]);
 
   if (setError || !questionSet) {
@@ -241,14 +352,25 @@ export async function GET(
   const recommendedTools = await loadRecommendedTools({
     dimensionScores,
   });
+  const summary = buildDiagnosisSummary(mappedAnswers, mappedQuestions);
+  const mappedCompany = company ? mapCompany(company as CompanyRow) : null;
+  const summaryContext = buildSummaryContext({
+    dimensionScores,
+    summary,
+    tools: recommendedTools,
+    company: mappedCompany,
+  });
+  const aiSummary = await generateDiagnosisAiSummary(summaryContext);
   const payload: DiagnosisResultResponse = {
     questionSet: mapQuestionSet(questionSet),
     questions: mappedQuestions,
     session: mapSession(session),
     answers: mappedAnswers,
     dimensionScores,
-    summary: buildDiagnosisSummary(mappedAnswers, mappedQuestions),
+    summary,
     tools: recommendedTools,
+    summaryContext,
+    aiSummary,
   };
 
   return NextResponse.json(diagnosisResultResponseSchema.parse(payload));

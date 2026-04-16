@@ -147,3 +147,27 @@ export interface RecommendedTool {
   whyRecommended: string;
   externalUrl: string;
 }
+
+export interface DiagnosisSummaryContext {
+  weakestDomains: string[];
+  strongestDomains: string[];
+  topProblems: string[];
+  recommendedTools: Array<{
+    title: string;
+    whyRecommended: string;
+  }>;
+  company: {
+    id: UUID;
+    name: string;
+    industry: string;
+    teamSize: string;
+    revenueRange: string | null;
+    primaryGoal: string | null;
+  } | null;
+}
+
+export interface DiagnosisAiSummary {
+  shortSummary: string;
+  keyFocus: string;
+  whyNow: string;
+}
