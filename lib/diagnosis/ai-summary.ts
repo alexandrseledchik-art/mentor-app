@@ -151,10 +151,13 @@ main_summary:
 main_focus:
 - 1 чёткое предложение
 - главный приоритет
+- только 1 идея
+- если в предложении есть "и" — перепиши
 
 why_now:
 - ровно 3 пункта
 - каждый: причина → к чему это приводит
+- не больше
 
 strengths:
 - 2–3 реальные опоры
@@ -174,6 +177,25 @@ first_steps:
 - не пиши абстрактно
 - не дублируй мысли
 - не придумывай факты`;
+
+const OUTPUT_STYLE_REMINDER = `
+
+=== ЖЁСТКИЕ ОГРАНИЧЕНИЯ ===
+
+WHY_NOW:
+- ровно 3 пункта
+- не больше
+
+MAIN_FOCUS:
+- только 1 идея
+- если в предложении есть "и" — перепиши
+
+ПИШИ КАК ДЛЯ ЗАНЯТОГО СОБСТВЕННИКА:
+- коротко
+- без перегруза
+- без попытки “показать глубину”
+
+ЕСЛИ МОЖНО СКАЗАТЬ КОРОЧЕ — СКАЖИ КОРОЧЕ`;
 
 function formatList(items: string[]) {
   if (items.length === 0) {
@@ -301,7 +323,7 @@ export async function generateDiagnosisAiSummary(
         input: [
           {
             role: "system",
-            content: systemPrompt,
+            content: `${systemPrompt}${OUTPUT_STYLE_REMINDER}`,
           },
           {
             role: "user",
