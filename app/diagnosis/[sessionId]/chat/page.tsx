@@ -12,10 +12,10 @@ export default async function DiagnosisChatPage({
   return (
     <main className="page-shell">
       <section className="card">
-        <span className="eyebrow">AI Chat After Diagnosis</span>
-        <h1>Разобрать результат с ИИ</h1>
+        <span className="eyebrow">Разбор результата</span>
+        <h1>Разбор результата диагностики</h1>
         <p className="muted">
-          Здесь можно задать вопросы по вашему результату и быстро перевести выводы в действия.
+          Поймём, что ограничивает рост, и определим первые шаги.
         </p>
 
         <div className="action-row">

@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 
-import { generateDiagnosisAiSummary } from "@/lib/diagnosis/ai-summary";
 import { generateDiagnosisChatReply } from "@/lib/diagnosis/ai-chat";
 import { parseQuestionOptions } from "@/lib/diagnosis/mappers";
 import {
@@ -304,17 +303,14 @@ function buildFallbackSummary(params: {
 function buildChatContext(params: {
   company: Company | null;
   dimensionScores: DiagnosisDimensionScore[];
-  aiSummary: DiagnosisAiSummary | null;
   summary: ReturnType<typeof buildDiagnosisSummary>;
   summaryContext: ReturnType<typeof buildSummaryContext>;
 }): DiagnosisChatContext {
-  const aiSummary =
-    params.aiSummary ??
-    buildFallbackSummary({
-      summary: params.summary,
-      summaryContext: params.summaryContext,
-      dimensionScores: params.dimensionScores,
-    });
+  const aiSummary = buildFallbackSummary({
+    summary: params.summary,
+    summaryContext: params.summaryContext,
+    dimensionScores: params.dimensionScores,
+  });
 
   return {
     company: params.company
@@ -401,11 +397,9 @@ export async function POST(request: Request) {
     tools: recommendedTools,
     company: mappedCompany,
   });
-  const aiSummary = await generateDiagnosisAiSummary(summaryContext, dimensionScores);
   const chatContext = buildChatContext({
     company: mappedCompany,
     dimensionScores,
-    aiSummary,
     summary,
     summaryContext,
   });

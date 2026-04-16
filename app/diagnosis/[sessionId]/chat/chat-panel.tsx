@@ -77,9 +77,9 @@ export function DiagnosisChatPanel({ sessionId }: { sessionId: string }) {
   return (
     <div className="section-stack">
       <section>
-        <h2>Разобрать результат с ИИ</h2>
+        <h2>Разбор вашего бизнеса</h2>
         <p className="muted">
-          Этот чат помогает разобрать именно ваш результат диагностики и перевести его в действия.
+          Этот чат помогает разобрать результат диагностики и перевести его в конкретные действия.
         </p>
       </section>
 
@@ -112,7 +112,7 @@ export function DiagnosisChatPanel({ sessionId }: { sessionId: string }) {
           </div>
         )) : (
           <p className="muted">
-            Задайте вопрос по вашему результату. ИИ останется в рамках диагностики и поможет понять, что делать дальше.
+            Задайте вопрос по вашему результату. Здесь можно быстро понять, что делать дальше и на чём сфокусироваться в первую очередь.
           </p>
         )}
       </section>
@@ -130,7 +130,7 @@ export function DiagnosisChatPanel({ sessionId }: { sessionId: string }) {
         </label>
 
         <button type="submit" disabled={isLoading || message.trim().length === 0}>
-          {isLoading ? "ИИ отвечает..." : "Спросить ИИ"}
+          {isLoading ? "Идёт разбор..." : "Продолжить разбор"}
         </button>
 
         {error ? <p className="muted">{error}</p> : null}

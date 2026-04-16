@@ -93,7 +93,7 @@ export default async function DiagnosisResultPage({
 
           <div className="action-row">
             <Link className="button-link" href={`/diagnosis/${sessionId}/chat`}>
-              Разобрать результат с ИИ
+              Разобрать результат
             </Link>
           </div>
 
@@ -148,6 +148,14 @@ export default async function DiagnosisResultPage({
           </section>
 
           <ResultTools tools={data.tools} />
+
+          <section>
+            <div className="action-row">
+              <Link className="button-link" href={`/diagnosis/${sessionId}/chat`}>
+                Разобрать результат
+              </Link>
+            </div>
+          </section>
         </div>
       </section>
     </main>
