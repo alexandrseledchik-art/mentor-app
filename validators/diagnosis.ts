@@ -16,8 +16,8 @@ export const diagnosisQuestionSetSchema = z.object({
 });
 
 export const diagnosisQuestionSchema = z.object({
-  id: z.string().uuid(),
-  questionSetId: z.string().uuid(),
+  id: z.string().min(1),
+  questionSetId: z.string().min(1),
   code: z.string().min(1),
   title: z.string().nullable(),
   questionText: z.string().min(1),

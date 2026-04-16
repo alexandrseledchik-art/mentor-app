@@ -32,6 +32,43 @@ type SeedQuestion = {
   weight: number;
 };
 
+function buildStaticQuestionSet(): DiagnosisStartGetResponse {
+  const seedQuestions = diagnosisQuestionsSeed as SeedQuestion[];
+
+  return {
+    questionSet: {
+      id: "express_v1",
+      code: "express_v1",
+      title: "Экспресс диагностика",
+      description: "Быстрая оценка состояния бизнеса",
+      version: 1,
+      isActive: true,
+      createdAt: new Date().toISOString(),
+    },
+    questions: seedQuestions.map((question, index) => ({
+      id: question.question_code,
+      questionSetId: "express_v1",
+      code: question.question_code,
+      title: question.question_text,
+      questionText: question.question_text,
+      dimension: question.dimension as DiagnosisQuestion["dimension"],
+      position: index + 1,
+      orderIndex: index + 1,
+      inputType: "single_select",
+      isRequired: true,
+      options: question.options.map((option) => ({
+        value: option.level,
+        label: option.text,
+      })),
+      weight: question.weight,
+      meta: {
+        source: "express_static_fallback",
+      },
+      createdAt: new Date().toISOString(),
+    })),
+  };
+}
+
 function mapQuestionSet(row: QuestionSetRow): DiagnosisQuestionSet {
   return {
     id: row.id,
@@ -257,7 +294,8 @@ export async function GET() {
     result = await loadQuestionSet("express_v1");
   } catch (error) {
     console.error("DIAGNOSIS START GET ERROR:", error);
-    return NextResponse.json({ error: "Failed to load diagnosis questions." }, { status: 500 });
+    const fallbackPayload = buildStaticQuestionSet();
+    return NextResponse.json(diagnosisStartGetResponseSchema.parse(fallbackPayload));
   }
 
   if ("error" in result) {

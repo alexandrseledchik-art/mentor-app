@@ -89,7 +89,7 @@ export default function DiagnosisPage() {
   }, [router]);
 
   const currentQuestion = questions[currentQuestionIndex];
-  const currentValue = currentQuestion ? answers[currentQuestion.id] : undefined;
+  const currentValue = currentQuestion ? answers[currentQuestion.code] : undefined;
   const isLastQuestion = currentQuestionIndex === questions.length - 1;
   const progressLabel = useMemo(() => {
     if (questions.length === 0) {
@@ -99,10 +99,10 @@ export default function DiagnosisPage() {
     return `${currentQuestionIndex + 1} из ${questions.length}`;
   }, [currentQuestionIndex, questions.length]);
 
-  function handleSelect(questionId: string, value: number) {
+  function handleSelect(questionCode: string, value: number) {
     setAnswers((current) => ({
       ...current,
-      [questionId]: value,
+      [questionCode]: value,
     }));
   }
 
@@ -156,7 +156,7 @@ export default function DiagnosisPage() {
           sessionId: sessionData.session.id,
           answers: questions.map((question) => ({
             questionId: question.id,
-            value: answers[question.id],
+            value: answers[question.code],
           })),
         }),
       });
@@ -209,14 +209,14 @@ export default function DiagnosisPage() {
 
         <div className="option-stack">
           {currentQuestion.options.map((option) => {
-            const isSelected = answers[currentQuestion.id] === option.value;
+            const isSelected = answers[currentQuestion.code] === option.value;
 
             return (
               <button
                 key={option.value}
                 type="button"
                 className={isSelected ? "option-button option-button-active" : "option-button"}
-                onClick={() => handleSelect(currentQuestion.id, option.value)}
+                onClick={() => handleSelect(currentQuestion.code, option.value)}
               >
                 {option.label}
               </button>
