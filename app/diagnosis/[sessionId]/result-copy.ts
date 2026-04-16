@@ -93,6 +93,10 @@ export function getWeakDimensions(dimensionScores: DiagnosisDimensionScore[]) {
   return dimensionScores.filter((item) => item.averageScore <= 2);
 }
 
+function sortByWeakestFirst(dimensionScores: DiagnosisDimensionScore[]) {
+  return dimensionScores.slice().sort((a, b) => a.averageScore - b.averageScore);
+}
+
 export function getDomainLabel(domain: string) {
   return DOMAIN_LABELS[domain] ?? domain;
 }
@@ -112,17 +116,29 @@ export function getDomainStrengthText(domain: string) {
 }
 
 export function getStartSteps(dimensionScores: DiagnosisDimensionScore[]) {
-  const weakest = getWeakDimensions(dimensionScores)
-    .slice()
-    .sort((a, b) => a.averageScore - b.averageScore)
-    .slice(0, 3);
+  const weakest = sortByWeakestFirst(getWeakDimensions(dimensionScores)).slice(0, 3);
 
-  return weakest.map((item) => ({
+  const steps = weakest.map((item) => ({
     title: getDomainLabel(item.dimension),
     text:
       DOMAIN_START_TEXT[item.dimension] ??
       "Начните с этой зоны и сформулируйте первый конкретный шаг на ближайшую неделю",
   }));
+
+  if (steps.length > 0) {
+    return steps;
+  }
+
+  return [
+    {
+      title: "Точка контроля",
+      text: "Зафиксируйте одну главную цель на ближайшие недели и договоритесь, по каким метрикам будете смотреть прогресс",
+    },
+    {
+      title: "Управленческий ритм",
+      text: "Введите короткий регулярный цикл обзора решений, цифр и узких мест, чтобы управление не уходило в ручной режим",
+    },
+  ];
 }
 
 export function getStrongDomains(dimensionScores: DiagnosisDimensionScore[]) {
@@ -130,4 +146,63 @@ export function getStrongDomains(dimensionScores: DiagnosisDimensionScore[]) {
     .slice()
     .sort((a, b) => b.averageScore - a.averageScore)
     .slice(0, 2);
+}
+
+export function getPrimaryFocus(dimensionScores: DiagnosisDimensionScore[]) {
+  const weakest = sortByWeakestFirst(getWeakDimensions(dimensionScores))[0];
+
+  if (!weakest) {
+    return "Собрать более чёткий управленческий ритм вокруг цифр, приоритетов и ответственности.";
+  }
+
+  return `${getDomainLabel(weakest.dimension)} — это главный контур, который сейчас стоит выровнять в первую очередь.`;
+}
+
+export function getFallbackMainSummary(dimensionScores: DiagnosisDimensionScore[]) {
+  const weakest = sortByWeakestFirst(getWeakDimensions(dimensionScores));
+  const strongest = getStrongDomains(dimensionScores);
+
+  if (weakest.length === 0) {
+    return "Сейчас бизнес выглядит достаточно собранным: критически слабых зон по этой диагностике не видно. Дальше важнее не потерять управляемость и закрепить то, что уже начинает работать как система.";
+  }
+
+  const weakestLabels = weakest.slice(0, 2).map((item) => getDomainLabel(item.dimension));
+  const strongestLabel = strongest[0] ? getDomainLabel(strongest[0].dimension) : null;
+  const weakestText =
+    weakestLabels.length === 1
+      ? weakestLabels[0]
+      : `${weakestLabels[0]} и ${weakestLabels[1]}`;
+
+  const strongText = strongestLabel
+    ? ` При этом уже есть контур, на который можно опереться: ${strongestLabel.toLowerCase()}.`
+    : "";
+
+  return `Сейчас бизнес частично держится на системе, но сильнее всего управляемость проседает в зоне «${weakestText}». Именно здесь решения, рост и ежедневная работа сильнее завязаны на ручное управление.${strongText}`;
+}
+
+export function getFallbackWhyNow(dimensionScores: DiagnosisDimensionScore[]) {
+  const weakest = sortByWeakestFirst(getWeakDimensions(dimensionScores));
+
+  if (weakest.length === 0) {
+    return "Когда явных провалов нет, главный риск — расслабиться и снова вернуть управление в ручной режим. Сейчас полезно закрепить сильные контуры и не дать им расползтись.";
+  }
+
+  const firstWeak = weakest[0];
+  const secondWeak = weakest[1];
+  const firstLabel = getDomainLabel(firstWeak.dimension);
+  const secondLabel = secondWeak ? getDomainLabel(secondWeak.dimension) : null;
+
+  if (secondLabel) {
+    return `Пока не выровнены «${firstLabel}» и «${secondLabel}», рост будет оставаться менее предсказуемым, а часть решений продолжит упираться в ручное управление. Это замедляет скорость компании и мешает закрепить результат.`;
+  }
+
+  return `Пока не выровнен контур «${firstLabel}», бизнес будет терять управляемость именно там, где сейчас нужен самый быстрый прогресс. Это ограничивает скорость решений и делает рост более хрупким.`;
+}
+
+export function getToolOutcome(tool: { title: string; summary: string }) {
+  if (tool.summary.trim().length > 0) {
+    return `На выходе у вас будет более понятный и применимый способ закрыть задачу в этой зоне, а не держать её в ручном режиме.`;
+  }
+
+  return `На выходе у вас появится конкретный рабочий ориентир, который поможет быстрее перевести эту зону в более управляемое состояние.`;
 }
