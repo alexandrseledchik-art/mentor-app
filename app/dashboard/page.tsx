@@ -8,6 +8,7 @@ async function loadDashboardData() {
   const requestHeaders = await headers();
   const host = requestHeaders.get("host");
   const forwardedProto = requestHeaders.get("x-forwarded-proto");
+  const cookie = requestHeaders.get("cookie") ?? "";
   const protocol =
     forwardedProto ??
     (host?.includes("localhost") || host?.startsWith("127.0.0.1") ? "http" : "https");
@@ -19,9 +20,12 @@ async function loadDashboardData() {
   const response = await fetch(`${protocol}://${host}/api/dashboard`, {
     method: "GET",
     cache: "no-store",
+    headers: {
+      cookie,
+    },
   });
 
-  if (response.status === 404) {
+  if (response.status === 401 || response.status === 404) {
     redirect("/onboarding");
   }
 
