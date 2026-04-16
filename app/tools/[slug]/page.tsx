@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 
 import { getToolBySlug } from "@/lib/tools";
 
+export const dynamic = "force-dynamic";
+
 function renderContent(content: Record<string, unknown>) {
   const sections = Array.isArray(content.sections) ? content.sections : [];
   const items = Array.isArray(content.items) ? content.items : [];

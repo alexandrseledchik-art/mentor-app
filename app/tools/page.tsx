@@ -2,6 +2,8 @@ import Link from "next/link";
 
 import { getToolsLibrary } from "@/lib/tools";
 
+export const dynamic = "force-dynamic";
+
 export default async function ToolsPage() {
   const { categories, tools } = await getToolsLibrary();
   const categoryById = new Map(categories.map((category) => [category.id, category]));
