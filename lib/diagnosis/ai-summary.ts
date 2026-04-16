@@ -278,6 +278,53 @@ FIRST_STEPS:
 * жёстко
 * без перегруза`;
 
+const PRIORITY_CONSTRAINTS = `
+
+=== ЖЁСТКОЕ ОГРАНИЧЕНИЕ ПРИОРИТЕТА ===
+
+Ты НЕ имеешь права:
+
+* перечислять все проблемы
+* давать более 3 причин
+* давать более 1 фокуса
+
+Если есть несколько проблем:
+
+* выбери одну главную
+* остальные игнорируй
+
+=== WHY_NOW ===
+
+* строго 3 пункта
+* не больше
+* каждый пункт = причина → эффект
+* если пункт можно убрать — убери
+
+=== MAIN_FOCUS ===
+
+* только 1 идея
+* нельзя использовать "и"
+* если есть "и" — перепиши
+
+=== MAIN_SUMMARY ===
+
+* максимум 2 предложения
+* должно читаться за 5 секунд
+
+=== FIRST_STEP ===
+
+* первый шаг = действие, которое можно сделать сегодня
+* не стратегия, а конкретика
+
+=== ГЛАВНОЕ ПРАВИЛО ===
+
+Ты не объясняешь бизнес.
+Ты сокращаешь сложность до одного решения.
+
+Если сомневаешься:
+→ убери лишнее
+→ оставь главное`;
+
 function formatList(items: string[]) {
   if (items.length === 0) {
     return "- нет данных";
@@ -404,7 +451,7 @@ export async function generateDiagnosisAiSummary(
         input: [
           {
             role: "system",
-            content: `${systemPrompt}${OUTPUT_STYLE_REMINDER}${UX_CONSTRAINTS}${DECISION_READY_CONSTRAINTS}`,
+            content: `${systemPrompt}${OUTPUT_STYLE_REMINDER}${UX_CONSTRAINTS}${DECISION_READY_CONSTRAINTS}${PRIORITY_CONSTRAINTS}`,
           },
           {
             role: "user",
