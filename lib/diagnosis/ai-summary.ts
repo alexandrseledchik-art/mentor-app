@@ -197,6 +197,43 @@ MAIN_FOCUS:
 
 ЕСЛИ МОЖНО СКАЗАТЬ КОРОЧЕ — СКАЖИ КОРОЧЕ`;
 
+const UX_CONSTRAINTS = `
+
+=== UX-ОГРАНИЧЕНИЯ (КРИТИЧНО) ===
+
+WHY_NOW:
+
+* строго 3 пункта
+* не больше
+* каждый пункт = причина → эффект
+
+MAIN_FOCUS:
+
+* только 1 идея
+* если в предложении есть "и" — переписать
+
+MAIN_SUMMARY:
+
+* максимум 2 предложения
+* не перечислять все проблемы
+
+FIRST_STEPS:
+
+* первый шаг должен быть конкретным действием
+* без абстракций
+
+ОБЩЕЕ ПРАВИЛО:
+
+* если можно сказать короче — сократи
+* если мысль дублируется — оставь одну
+* не пытайся показать всю картину — покажи главное
+
+ПИШИ КАК ДЛЯ ЗАНЯТОГО СОБСТВЕННИКА:
+
+* быстро
+* жёстко
+* по делу`;
+
 function formatList(items: string[]) {
   if (items.length === 0) {
     return "- нет данных";
@@ -323,7 +360,7 @@ export async function generateDiagnosisAiSummary(
         input: [
           {
             role: "system",
-            content: `${systemPrompt}${OUTPUT_STYLE_REMINDER}`,
+            content: `${systemPrompt}${OUTPUT_STYLE_REMINDER}${UX_CONSTRAINTS}`,
           },
           {
             role: "user",
