@@ -161,9 +161,11 @@ export default function DiagnosisPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          companyId: resolvedCompanyId,
-        }),
+        body: JSON.stringify(
+          resolvedCompanyId
+            ? { companyId: resolvedCompanyId }
+            : {},
+        ),
       });
 
       const sessionData =

@@ -349,6 +349,18 @@ export async function POST(request: Request) {
   if (currentUserId) {
     companyQuery = companyQuery.eq("user_id", currentUserId);
   } else {
+    if (!companyId) {
+      console.error("DIAGNOSIS START COMPANY LOOKUP ERROR:", {
+        userId: currentUserId,
+        payloadCompanyId: companyId,
+        reason: "Missing both auth user cookie and fallback companyId.",
+      });
+      return NextResponse.json(
+        { error: "Компания не найдена. Вернитесь в онбординг и проверьте профиль компании." },
+        { status: 404 },
+      );
+    }
+
     companyQuery = companyQuery.eq("id", companyId);
   }
 
@@ -370,7 +382,9 @@ export async function POST(request: Request) {
       payloadCompanyId: companyId,
       reason: currentUserId
         ? "No company linked to current auth user."
-        : "No company found by provided companyId.",
+        : companyId
+          ? "No company found by provided companyId."
+          : "No auth user cookie and no fallback companyId provided.",
     });
     return NextResponse.json(
       { error: "Компания не найдена. Вернитесь в онбординг и проверьте профиль компании." },

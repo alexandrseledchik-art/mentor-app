@@ -55,7 +55,7 @@ export const diagnosisSubmitAnswerSchema = z.object({
 });
 
 export const diagnosisStartRequestSchema = z.object({
-  companyId: z.string().uuid(),
+  companyId: z.string().uuid().optional(),
   questionSetCode: z.string().min(1).default("express_v1").optional(),
 });
 
@@ -104,6 +104,34 @@ export const diagnosisRecommendedToolSchema = z.object({
   externalUrl: z.string().min(1),
 });
 
+export const diagnosisSummaryContextSchema = z.object({
+  weakestDomains: z.array(z.string().min(1)),
+  strongestDomains: z.array(z.string().min(1)),
+  topProblems: z.array(z.string().min(1)),
+  recommendedTools: z.array(
+    z.object({
+      title: z.string().min(1),
+      whyRecommended: z.string().min(1),
+    }),
+  ),
+  company: z
+    .object({
+      id: z.string().min(1),
+      name: z.string().min(1),
+      industry: z.string().min(1),
+      teamSize: z.string().min(1),
+      revenueRange: z.string().nullable(),
+      primaryGoal: z.string().nullable(),
+    })
+    .nullable(),
+});
+
+export const diagnosisAiSummarySchema = z.object({
+  shortSummary: z.string().min(1),
+  keyFocus: z.string().min(1),
+  whyNow: z.string().min(1),
+});
+
 export const diagnosisResultResponseSchema = z.object({
   questionSet: diagnosisQuestionSetSchema,
   questions: z.array(diagnosisQuestionSchema),
@@ -112,6 +140,8 @@ export const diagnosisResultResponseSchema = z.object({
   dimensionScores: z.array(diagnosisDimensionScoreSchema),
   summary: diagnosisResultSummarySchema,
   tools: z.array(diagnosisRecommendedToolSchema).max(5),
+  summaryContext: diagnosisSummaryContextSchema,
+  aiSummary: diagnosisAiSummarySchema.nullable(),
 });
 
 export type DiagnosisQuestionOptionInput = z.infer<

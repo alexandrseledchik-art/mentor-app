@@ -5,6 +5,8 @@ import type {
   DiagnosisQuestion,
   DiagnosisQuestionSet,
   DiagnosisResultSummary,
+  DiagnosisAiSummary,
+  DiagnosisSummaryContext,
   DiagnosisSession,
   RecommendedTool,
   Tool,
@@ -40,7 +42,7 @@ export interface DiagnosisStartGetResponse {
 }
 
 export interface DiagnosisStartRequest {
-  companyId: string;
+  companyId?: string;
   questionSetCode?: string;
 }
 
@@ -73,6 +75,8 @@ export interface DiagnosisResultResponse {
   dimensionScores: DiagnosisDimensionScore[];
   summary: DiagnosisResultSummary;
   tools: RecommendedTool[];
+  summaryContext: DiagnosisSummaryContext;
+  aiSummary: DiagnosisAiSummary | null;
 }
 
 export interface ToolsLibraryResponse {
