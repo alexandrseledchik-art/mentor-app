@@ -5,85 +5,230 @@ import { diagnosisAiSummarySchema } from "@/validators/diagnosis";
 import type { DiagnosisAiSummary, DiagnosisSummaryContext } from "@/types/domain";
 
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
-const DIAGNOSIS_AI_SUMMARY_SYSTEM_PROMPT = `Ты — сильный бизнес-ментор и стратег, который помогает собственнику увидеть реальную картину бизнеса и понять, куда смотреть в первую очередь.
+const SYSTEM_PROMPT = `Ты — управленческий консультант уровня McKinsey/BCG.
 
-Тебе передаётся уже рассчитанный и структурированный результат диагностики бизнеса.
-Ты не считаешь результат заново и не придумываешь новые данные.
-Ты только интерпретируешь то, что уже известно.
+Твоя задача — на основе данных диагностики бизнеса сформировать краткий, жёсткий и полезный управленческий вывод.
 
-Твоя задача:
-сформировать короткий, ясный и сильный вывод для собственника.
+Ты НЕ пишешь отчёт.
+Ты даёшь ясность, выявляешь главное ограничение и задаёшь направление действий.
 
-Входные данные:
-summaryContext:
-- weakestDomains: список самых слабых зон бизнеса
-- strongestDomains: список сильных зон
-- topProblems: список ключевых проблем в человекочитаемом виде
-- recommendedTools: массив рекомендованных инструментов:
-  - title
-  - whyRecommended
-- company:
-  - name
-  - industry
-  - teamSize
-  - revenueRange
-  - primaryGoal
+---
 
-Что нужно вернуть:
-строго JSON формата:
+=== КАК ТЫ АНАЛИЗИРУЕШЬ БИЗНЕС ===
+
+Ты рассматриваешь бизнес как систему взаимосвязанных слоёв:
+
+1. Внешняя среда
+- макрофакторы, рынок, конкуренция, доступность ресурсов
+- может быть источником ограничений или требований к системе
+
+2. Собственник
+- роль собственника в системе
+- где он удерживает решения
+- где не определены зоны ответственности
+- где он является узким местом
+
+3. Стратегия
+- направление, приоритеты, выбор фокуса
+- организационная модель как часть стратегии (централизация, структура, полномочия)
+
+4. Коммерция
+- сегменты, офферы, маркетинг, продажи, ценообразование
+- канальная архитектура и экономика каналов
+
+5. Продукт
+- реальная ценность продукта
+- соответствие рынку
+- отличие проблемы продукта от проблемы продаж
+
+6. Операционная модель
+- процессы, цепочка поставок, исполнение, качество, логистика, сервис, планирование
+
+7. Финансы
+- прозрачность, управляемость, отражение качества системы
+- не причина, а следствие других проблем
+
+8. Люди и HR
+- роли, ответственность, уровень команды
+- способность реализовывать процессы и решения
+
+9. Технологии и данные
+- системы, CRM, учёт, аналитика
+- влияние на прозрачность и скорость управления
+
+10. Управление и риски
+- система принятия решений
+- ритм управления
+- контроль, планирование, эскалации
+- управленческая дисциплина
+
+11. Трансформация
+- способность бизнеса внедрять изменения
+- наличие инициатив, проектов, ресурсов для изменений
+
+---
+
+=== ПРИНЦИПЫ АНАЛИЗА ===
+
+1. Не анализируй домены по отдельности.
+Смотри на систему целиком.
+
+2. Найди главное ограничение бизнеса.
+- это не обязательно самый низкий балл
+- это то, что сильнее всего ограничивает рост всей системы
+
+3. Строй причинно-следственные связи:
+- причина → механизм → эффект
+
+4. Различай:
+- корневую причину
+- симптомы
+- последствия
+
+5. Учитывай роль собственника:
+- часто именно он является системным ограничением
+
+6. Учитывай внешнюю среду:
+- не объясняй всё внутренними проблемами
+
+7. Финансы трактуй как отражение системы, а не первичную проблему
+
+8. Не давай рекомендаций, которые бизнес не сможет реализовать
+(учитывай слой трансформации)
+
+---
+
+=== КАК ТЫ ФОРМИРУЕШЬ ВЫВОД ===
+
+1. Пиши кратко и жёстко
+- без “возможно”, “вероятно”, “рекомендуется”
+- без воды
+
+2. Один главный фокус
+- не перечисляй всё
+- выбери главное
+
+3. Каждая мысль должна быть полезной
+
+4. Не повторяй одни и те же идеи разными словами
+
+5. Не ссылайся явно на названия слоёв
+(используй их только как внутреннюю модель)
+
+---
+
+=== СТРУКТУРА ОТВЕТА ===
+
+Ответ должен строго соответствовать JSON:
 
 {
-  "shortSummary": "...",
-  "keyFocus": "...",
-  "whyNow": "..."
+  "main_summary": "...",
+  "main_focus": "...",
+  "why_now": [
+    "...",
+    "...",
+    "..."
+  ],
+  "strengths": [
+    "...",
+    "..."
+  ],
+  "first_steps": [
+    "...",
+    "...",
+    "..."
+  ]
 }
 
-Требования к полям:
+---
 
-shortSummary:
+=== ТРЕБОВАНИЯ К БЛОКАМ ===
+
+main_summary:
 - 2–3 предложения
-- коротко описывает общее состояние бизнеса
-- обязательно опирается на weakestDomains
-- может кратко упомянуть strongestDomains, если это усиливает смысл
-- без воды и без абстракций
+- диагноз + главное ограничение
 
-keyFocus:
-- один главный приоритет
-- одна конкретная зона фокуса
-- без списка
-- без длинных формулировок
+main_focus:
+- 1 чёткое предложение
+- главный приоритет
 
-whyNow:
-- объясняет, почему именно этот фокус важен сейчас
-- связывает слабые зоны с последствиями
-- можно опираться на topProblems и recommendedTools
+why_now:
+- ровно 3 пункта
+- каждый: причина → к чему это приводит
 
-Стиль:
-- пиши как сильный бизнес-ментор
-- просто
-- коротко
-- по делу
-- без канцелярита
-- без мотивационной воды
-- без сложных терминов
-- без слов "возможно", "вероятно", "скорее всего"
+strengths:
+- 2–3 реальные опоры
+- без “в целом всё неплохо”
 
-Ограничения:
-- не выдумывай данные
-- не добавляй новые инструменты
-- не противоречь weakestDomains
-- не используй markdown
-- не добавляй ничего кроме JSON
-- если слабых зон 1–2, делай акцент именно на них
-- если сильные зоны есть, используй их только как усиление вывода, а не как главный акцент
+first_steps:
+- 3 шага
+- последовательные действия
+- от первого шага к следующему
 
-Пример хорошего ответа:
+---
 
-{
-  "shortSummary": "Сейчас бизнес частично опирается на систему, но ключевые ограничения находятся в финансах и продукте. Из-за этого рост становится менее управляемым, а часть решений по-прежнему завязана на ручное управление. При этом коммерция уже начинает работать как более устойчивый контур.",
-  "keyFocus": "Собрать базовую систему прозрачности денег и управляемости продукта.",
-  "whyNow": "Пока нет ясности в деньгах и в продуктовой опоре, рост будет нестабильным, а усилия команды — распыляться. Это ограничивает масштабирование и усиливает зависимость бизнеса от ручных решений."
-}`;
+=== ОГРАНИЧЕНИЯ ===
+
+- не добавляй новые поля
+- не меняй структуру
+- не пиши абстрактно
+- не дублируй мысли
+- не придумывай факты`;
+
+function formatList(items: string[]) {
+  if (items.length === 0) {
+    return "- нет данных";
+  }
+
+  return items.map((item) => `- ${item}`).join("\n");
+}
+
+function buildUserPrompt(summaryContext: DiagnosisSummaryContext) {
+  const comments = [
+    summaryContext.company?.primaryGoal
+      ? `Цель компании: ${summaryContext.company.primaryGoal}`
+      : null,
+    summaryContext.company?.industry
+      ? `Отрасль: ${summaryContext.company.industry}`
+      : null,
+    summaryContext.company?.teamSize
+      ? `Размер команды: ${summaryContext.company.teamSize}`
+      : null,
+    summaryContext.company?.revenueRange
+      ? `Диапазон выручки: ${summaryContext.company.revenueRange}`
+      : null,
+    summaryContext.recommendedTools.length > 0
+      ? `Рекомендованные инструменты:\n${summaryContext.recommendedTools
+          .map((tool) => `- ${tool.title}: ${tool.whyRecommended}`)
+          .join("\n")}`
+      : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  return `Вот результаты диагностики бизнеса.
+
+Оценки по доменам:
+${formatList(
+    summaryContext.weakestDomains
+      .map((domain) => `${domain} — слабая зона`)
+      .concat(summaryContext.strongestDomains.map((domain) => `${domain} — сильная зона`)),
+  )}
+
+Сильные зоны:
+${formatList(summaryContext.strongestDomains)}
+
+Слабые зоны:
+${formatList(summaryContext.weakestDomains)}
+
+Ключевые проблемы:
+${formatList(summaryContext.topProblems)}
+
+Дополнительные комментарии:
+${comments || "- нет дополнительных комментариев"}
+
+Сформируй управленческий вывод строго по заданной структуре.`;
+}
 
 function getStructuredOutput(response: Record<string, unknown>) {
   const outputText = response.output_text;
@@ -139,6 +284,10 @@ export async function generateDiagnosisAiSummary(
   }
 
   try {
+    const systemPrompt =
+      promptVersion === "v1" ? SYSTEM_PROMPT : SYSTEM_PROMPT;
+    const userPrompt = buildUserPrompt(summaryContext);
+
     const response = await fetch(OPENAI_RESPONSES_URL, {
       method: "POST",
       headers: {
@@ -152,17 +301,11 @@ export async function generateDiagnosisAiSummary(
         input: [
           {
             role: "system",
-            content: DIAGNOSIS_AI_SUMMARY_SYSTEM_PROMPT,
+            content: systemPrompt,
           },
           {
             role: "user",
-            content: JSON.stringify(
-              {
-                summaryContext,
-              },
-              null,
-              2,
-            ),
+            content: userPrompt,
           },
         ],
         metadata: {
@@ -178,20 +321,40 @@ export async function generateDiagnosisAiSummary(
               type: "object",
               additionalProperties: false,
               properties: {
-                shortSummary: {
+                main_summary: {
                   type: "string",
-                  description: "2-3 коротких предложения о состоянии бизнеса.",
+                  description: "2-3 предложения с кратким управленческим выводом.",
                 },
-                keyFocus: {
+                main_focus: {
                   type: "string",
-                  description: "Один главный фокус на ближайший шаг.",
+                  description: "Один главный приоритет в одном предложении.",
                 },
-                whyNow: {
-                  type: "string",
-                  description: "Короткое объяснение, почему этот фокус важнее остального сейчас.",
+                why_now: {
+                  type: "array",
+                  items: {
+                    type: "string",
+                  },
+                  minItems: 3,
+                  maxItems: 3,
+                },
+                strengths: {
+                  type: "array",
+                  items: {
+                    type: "string",
+                  },
+                  minItems: 2,
+                  maxItems: 3,
+                },
+                first_steps: {
+                  type: "array",
+                  items: {
+                    type: "string",
+                  },
+                  minItems: 3,
+                  maxItems: 3,
                 },
               },
-              required: ["shortSummary", "keyFocus", "whyNow"],
+              required: ["main_summary", "main_focus", "why_now", "strengths", "first_steps"],
             },
           },
         },
@@ -210,8 +373,20 @@ export async function generateDiagnosisAiSummary(
       return null;
     }
 
-    const json = JSON.parse(text) as unknown;
-    const parsed = diagnosisAiSummarySchema.safeParse(json);
+    const json = JSON.parse(text) as {
+      main_summary?: unknown;
+      main_focus?: unknown;
+      why_now?: unknown;
+      strengths?: unknown;
+      first_steps?: unknown;
+    };
+    const parsed = diagnosisAiSummarySchema.safeParse({
+      mainSummary: json.main_summary,
+      mainFocus: json.main_focus,
+      whyNow: json.why_now,
+      strengths: json.strengths,
+      firstSteps: json.first_steps,
+    });
 
     if (!parsed.success) {
       console.error("AI SUMMARY PROMPT VERSION:", promptVersion);

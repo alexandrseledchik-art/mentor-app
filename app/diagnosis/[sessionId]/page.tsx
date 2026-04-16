@@ -56,9 +56,19 @@ export default async function DiagnosisResultPage({
   const weakDimensions = getWeakDimensions(data.dimensionScores);
   const startSteps = getStartSteps(data.dimensionScores);
   const strongDomains = getStrongDomains(data.dimensionScores);
-  const mainSummary = data.aiSummary?.shortSummary ?? getFallbackMainSummary(data.dimensionScores);
-  const mainFocus = data.aiSummary?.keyFocus ?? getPrimaryFocus(data.dimensionScores);
-  const whyNow = data.aiSummary?.whyNow ?? getFallbackWhyNow(data.dimensionScores);
+  const mainSummary = data.aiSummary?.mainSummary ?? getFallbackMainSummary(data.dimensionScores);
+  const mainFocus = data.aiSummary?.mainFocus ?? getPrimaryFocus(data.dimensionScores);
+  const whyNowItems = data.aiSummary?.whyNow ?? [getFallbackWhyNow(data.dimensionScores)];
+  const strengthItems =
+    data.aiSummary?.strengths ??
+    (strongDomains.length > 0
+      ? strongDomains.map((item) => getDomainStrengthText(item.dimension))
+      : [
+          "Пока явных опорных зон немного, поэтому лучше идти от самого слабого контура и быстро собирать там первую рабочую систему.",
+        ]);
+  const firstStepItems =
+    data.aiSummary?.firstSteps ??
+    startSteps.map((item) => `${item.title}: ${item.text}`);
 
   return (
     <main className="page-shell">
@@ -91,7 +101,11 @@ export default async function DiagnosisResultPage({
 
           <section>
             <h2>Почему именно сейчас</h2>
-            <p>{whyNow}</p>
+            <ul className="plain-list">
+              {whyNowItems.map((item, index) => (
+                <li key={`why-now-${index}`}>{item}</li>
+              ))}
+            </ul>
             <ul className="plain-list">
               {weakDimensions.length > 0 ? weakDimensions.map((item) => (
                 <li key={item.dimension}>
@@ -106,24 +120,18 @@ export default async function DiagnosisResultPage({
           <section>
             <h2>На что уже можно опереться</h2>
             <ul className="plain-list">
-              {strongDomains.length > 0 ? strongDomains.map((item) => (
-                <li key={item.dimension}>
-                  {getDomainStrengthText(item.dimension)}
-                </li>
-              )) : (
-                <li>
-                  Пока явных опорных зон немного, поэтому лучше идти от самого слабого контура и быстро собирать там первую рабочую систему.
-                </li>
-              )}
+              {strengthItems.map((item, index) => (
+                <li key={`strength-${index}`}>{item}</li>
+              ))}
             </ul>
           </section>
 
           <section>
             <h2>С чего начать</h2>
             <ul className="plain-list">
-              {startSteps.map((item) => (
-                <li key={item.title}>
-                  <strong>{item.title}:</strong> {item.text}
+              {firstStepItems.map((item, index) => (
+                <li key={`first-step-${index}`}>
+                  {item}
                 </li>
               ))}
             </ul>

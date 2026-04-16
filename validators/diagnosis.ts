@@ -127,9 +127,11 @@ export const diagnosisSummaryContextSchema = z.object({
 });
 
 export const diagnosisAiSummarySchema = z.object({
-  shortSummary: z.string().min(1),
-  keyFocus: z.string().min(1),
-  whyNow: z.string().min(1),
+  mainSummary: z.string().min(1),
+  mainFocus: z.string().min(1),
+  whyNow: z.array(z.string().min(1)).min(1).max(3),
+  strengths: z.array(z.string().min(1)).min(1).max(3),
+  firstSteps: z.array(z.string().min(1)).min(1).max(3),
 });
 
 export const diagnosisResultResponseSchema = z.object({

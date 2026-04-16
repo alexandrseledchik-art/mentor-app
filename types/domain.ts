@@ -167,7 +167,9 @@ export interface DiagnosisSummaryContext {
 }
 
 export interface DiagnosisAiSummary {
-  shortSummary: string;
-  keyFocus: string;
-  whyNow: string;
+  mainSummary: string;
+  mainFocus: string;
+  whyNow: string[];
+  strengths: string[];
+  firstSteps: string[];
 }
