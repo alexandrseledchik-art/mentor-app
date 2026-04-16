@@ -16,23 +16,23 @@ export async function POST(request: Request) {
 
   const supabase = getSupabaseAdminClient();
   const { name, industry, team_size, monthly_revenue_range, goal } = parsed.data;
+  const timestamp = Date.now();
+  const email = `onboarding_${timestamp}@example.local`;
+  const password = `TempPass123!${timestamp}`;
 
-  const { data: user, error: userError } = await supabase
-    .from("users")
-    .insert({
-      telegram_user_id: Date.now(),
-      first_name: "Demo",
-      last_name: "User",
-    })
-    .select("id")
-    .single();
+  const { data: authData, error: userError } = await supabase.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+  });
+  const authUser = authData.user;
 
-  if (userError || !user) {
+  if (userError || !authUser) {
     console.error("USER ERROR FULL:", JSON.stringify(userError, null, 2));
 
     return NextResponse.json(
       {
-        error: "USER ERROR",
+        error: userError?.message || "Ошибка создания пользователя",
         details: userError,
       },
       { status: 500 },
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
   const { data: company, error: companyError } = await supabase
     .from("companies")
     .insert({
-      user_id: user.id,
+      user_id: authUser.id,
       name,
       industry,
       team_size,
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
     .single();
 
   if (companyError || !company) {
-    console.error("COMPANY ERROR:", companyError);
+    console.error("COMPANY ERROR FULL:", JSON.stringify(companyError, null, 2));
 
     return NextResponse.json(
       {

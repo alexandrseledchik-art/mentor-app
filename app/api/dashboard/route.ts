@@ -5,22 +5,26 @@ import type { DashboardResponse } from "@/types/api";
 import type { Database } from "@/types/db";
 import type { Company, DiagnosisSession, Tool, User } from "@/types/domain";
 
-type UserRow = Database["public"]["Tables"]["users"]["Row"];
 type CompanyRow = Database["public"]["Tables"]["companies"]["Row"];
 type DiagnosisSessionRow = Database["public"]["Tables"]["diagnosis_sessions"]["Row"];
 type ToolRow = Database["public"]["Tables"]["tools"]["Row"];
 
-function mapUser(row: UserRow): User {
+function mapUser(params: {
+  id: string;
+  email: string | null;
+  createdAt: string;
+  updatedAt: string;
+}): User {
   return {
-    id: row.id,
-    telegramUserId: row.telegram_user_id,
-    telegramUsername: row.telegram_username,
-    firstName: row.first_name,
-    lastName: row.last_name,
-    languageCode: row.language_code,
-    photoUrl: row.photo_url,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    id: params.id,
+    telegramUserId: 0,
+    telegramUsername: params.email,
+    firstName: "User",
+    lastName: null,
+    languageCode: null,
+    photoUrl: null,
+    createdAt: params.createdAt,
+    updatedAt: params.updatedAt,
   };
 }
 
@@ -94,8 +98,9 @@ export async function GET() {
     return NextResponse.json({ error: "Компания не найдена." }, { status: 404 });
   }
 
-  const [{ data: user }, { data: latestDiagnosis }, { data: featuredTools }] = await Promise.all([
-    supabase.from("users").select("*").eq("id", company.user_id).maybeSingle(),
+  const [{ data: authUserResponse }, { data: latestDiagnosis }, { data: featuredTools }] =
+    await Promise.all([
+      supabase.auth.admin.getUserById(company.user_id),
     supabase
       .from("diagnosis_sessions")
       .select("*")
@@ -109,19 +114,14 @@ export async function GET() {
       .eq("is_featured", true)
       .order("created_at", { ascending: false })
       .limit(3),
-  ]);
+    ]);
 
   const payload: DashboardResponse = {
-    user: user ? mapUser(user) : mapUser({
+    user: mapUser({
       id: company.user_id,
-      telegram_user_id: 0,
-      telegram_username: null,
-      first_name: "Demo",
-      last_name: null,
-      language_code: null,
-      photo_url: null,
-      created_at: company.created_at,
-      updated_at: company.updated_at,
+      email: authUserResponse.user?.email ?? null,
+      createdAt: company.created_at,
+      updatedAt: company.updated_at,
     }),
     company: mapCompany(company),
     latestDiagnosis: latestDiagnosis ? mapDiagnosisSession(latestDiagnosis) : null,
