@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { parseQuestionOptions } from "@/lib/diagnosis/mappers";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
+import diagnosisQuestionsSeed from "@/data/diagnosis-questions.express.ui.json";
 import type {
   DiagnosisStartGetResponse,
   DiagnosisStartRequest,
@@ -18,6 +19,18 @@ import {
 type QuestionSetRow = Database["public"]["Tables"]["diagnosis_question_sets"]["Row"];
 type QuestionRow = Database["public"]["Tables"]["diagnosis_questions"]["Row"];
 type SessionRow = Database["public"]["Tables"]["diagnosis_sessions"]["Row"];
+
+type SeedQuestion = {
+  question_code: string;
+  question_text: string;
+  dimension: string;
+  options: Array<{
+    level: number;
+    label: string;
+    text: string;
+  }>;
+  weight: number;
+};
 
 function mapQuestionSet(row: QuestionSetRow): DiagnosisQuestionSet {
   return {
@@ -69,8 +82,90 @@ function mapSession(row: SessionRow): DiagnosisSession {
   };
 }
 
+async function ensureExpressQuestionSet() {
+  const supabase = getSupabaseAdminClient();
+
+  const { data: existingQuestionSet, error: existingSetError } = await supabase
+    .from("diagnosis_question_sets")
+    .select("*")
+    .eq("code", "express_v1")
+    .maybeSingle();
+
+  if (existingSetError) {
+    throw existingSetError;
+  }
+
+  let questionSet = existingQuestionSet;
+
+  if (!questionSet) {
+    const { data: createdQuestionSet, error: createSetError } = await supabase
+      .from("diagnosis_question_sets")
+      .insert({
+        code: "express_v1",
+        title: "Экспресс диагностика",
+        description: "Быстрая оценка состояния бизнеса",
+        version: 1,
+        is_active: true,
+      })
+      .select("*")
+      .single();
+
+    if (createSetError || !createdQuestionSet) {
+      throw createSetError ?? new Error("Failed to create express question set.");
+    }
+
+    questionSet = createdQuestionSet;
+  }
+
+  const { data: existingQuestions, error: existingQuestionsError } = await supabase
+    .from("diagnosis_questions")
+    .select("id")
+    .eq("question_set_id", questionSet.id)
+    .limit(1);
+
+  if (existingQuestionsError) {
+    throw existingQuestionsError;
+  }
+
+  if (!existingQuestions || existingQuestions.length === 0) {
+    const seedQuestions = diagnosisQuestionsSeed as SeedQuestion[];
+
+    const { error: insertQuestionsError } = await supabase
+      .from("diagnosis_questions")
+      .upsert(
+        seedQuestions.map((question, index) => ({
+          question_set_id: questionSet.id,
+          code: question.question_code,
+          title: question.question_text,
+          question_text: question.question_text,
+          dimension: question.dimension,
+          position: index + 1,
+          order_index: index + 1,
+          input_type: "single_select",
+          is_required: true,
+          options: question.options.map((option) => ({
+            value: option.level,
+            label: option.text,
+          })),
+          weight: question.weight,
+          meta: {
+            source: "express_ui_seed_fallback",
+          },
+        })),
+        { onConflict: "code" },
+      );
+
+    if (insertQuestionsError) {
+      throw insertQuestionsError;
+    }
+  }
+
+  return questionSet;
+}
+
 async function loadQuestionSet(code: string) {
   const supabase = getSupabaseAdminClient();
+  await ensureExpressQuestionSet();
 
   const { data: questionSet, error: setError } = await supabase
     .from("diagnosis_question_sets")
