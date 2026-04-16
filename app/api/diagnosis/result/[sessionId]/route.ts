@@ -360,7 +360,7 @@ export async function GET(
     tools: recommendedTools,
     company: mappedCompany,
   });
-  const aiSummary = await generateDiagnosisAiSummary(summaryContext);
+  const aiSummary = await generateDiagnosisAiSummary(summaryContext, dimensionScores);
   const payload: DiagnosisResultResponse = {
     questionSet: mapQuestionSet(questionSet),
     questions: mappedQuestions,

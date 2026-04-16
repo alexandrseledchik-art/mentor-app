@@ -2,7 +2,11 @@ import "server-only";
 
 import { diagnosisAiSummarySchema } from "@/validators/diagnosis";
 
-import type { DiagnosisAiSummary, DiagnosisSummaryContext } from "@/types/domain";
+import type {
+  DiagnosisAiSummary,
+  DiagnosisDimensionScore,
+  DiagnosisSummaryContext,
+} from "@/types/domain";
 
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
 const SYSTEM_PROMPT = `Ты — управленческий консультант уровня McKinsey/BCG.
@@ -121,59 +125,40 @@ FIRST_STEPS:
 * жёстко
 * по делу`;
 
-function formatList(items: string[]) {
-  if (items.length === 0) {
-    return "- нет данных";
-  }
+function buildUserMessage(
+  summaryContext: DiagnosisSummaryContext,
+  dimensionScores: DiagnosisDimensionScore[],
+) {
+  const scoreByDimension = new Map(
+    dimensionScores.map((item) => [item.dimension, item.averageScore]),
+  );
 
-  return items.map((item) => `- ${item}`).join("\n");
-}
-
-function buildUserPrompt(summaryContext: DiagnosisSummaryContext) {
-  const comments = [
-    summaryContext.company?.primaryGoal
-      ? `Цель компании: ${summaryContext.company.primaryGoal}`
-      : null,
-    summaryContext.company?.industry
-      ? `Отрасль: ${summaryContext.company.industry}`
-      : null,
-    summaryContext.company?.teamSize
-      ? `Размер команды: ${summaryContext.company.teamSize}`
-      : null,
-    summaryContext.company?.revenueRange
-      ? `Диапазон выручки: ${summaryContext.company.revenueRange}`
-      : null,
-    summaryContext.recommendedTools.length > 0
-      ? `Рекомендованные инструменты:\n${summaryContext.recommendedTools
-          .map((tool) => `- ${tool.title}: ${tool.whyRecommended}`)
-          .join("\n")}`
-      : null,
-  ]
-    .filter(Boolean)
-    .join("\n");
-
-  return `Вот результаты диагностики бизнеса.
-
-Оценки по доменам:
-${formatList(
-    summaryContext.weakestDomains
-      .map((domain) => `${domain} — слабая зона`)
-      .concat(summaryContext.strongestDomains.map((domain) => `${domain} — сильная зона`)),
-  )}
-
-Сильные зоны:
-${formatList(summaryContext.strongestDomains)}
-
-Слабые зоны:
-${formatList(summaryContext.weakestDomains)}
-
-Ключевые проблемы:
-${formatList(summaryContext.topProblems)}
-
-Дополнительные комментарии:
-${comments || "- нет дополнительных комментариев"}
-
-Сформируй управленческий вывод строго по заданной структуре.`;
+  return JSON.stringify(
+    {
+      company: {
+        name: summaryContext.company?.name ?? null,
+        industry: summaryContext.company?.industry ?? null,
+        teamSize: summaryContext.company?.teamSize ?? null,
+        revenue: summaryContext.company?.revenueRange ?? null,
+        goal: summaryContext.company?.primaryGoal ?? null,
+      },
+      scores: {
+        owner: scoreByDimension.get("owner") ?? null,
+        market: scoreByDimension.get("external_environment") ?? null,
+        strategy: scoreByDimension.get("strategy") ?? null,
+        product: scoreByDimension.get("product") ?? null,
+        sales: scoreByDimension.get("commercial") ?? null,
+        operations: scoreByDimension.get("operations") ?? null,
+        finance: scoreByDimension.get("finance") ?? null,
+        team: scoreByDimension.get("team") ?? null,
+        management: scoreByDimension.get("governance") ?? null,
+        tech: scoreByDimension.get("technology") ?? null,
+        data: scoreByDimension.get("data") ?? null,
+      },
+    },
+    null,
+    2,
+  );
 }
 
 function getStructuredOutput(response: Record<string, unknown>) {
@@ -218,6 +203,7 @@ function getStructuredOutput(response: Record<string, unknown>) {
 
 export async function generateDiagnosisAiSummary(
   summaryContext: DiagnosisSummaryContext,
+  dimensionScores: DiagnosisDimensionScore[],
 ): Promise<DiagnosisAiSummary | null> {
   const apiKey = process.env.OPENAI_API_KEY;
   const model = process.env.OPENAI_MODEL ?? "gpt-4.1-mini";
@@ -232,7 +218,7 @@ export async function generateDiagnosisAiSummary(
   try {
     const systemPrompt =
       promptVersion === "v1" ? SYSTEM_PROMPT : SYSTEM_PROMPT;
-    const userPrompt = buildUserPrompt(summaryContext);
+    const userMessage = buildUserMessage(summaryContext, dimensionScores);
 
     const response = await fetch(OPENAI_RESPONSES_URL, {
       method: "POST",
@@ -251,7 +237,7 @@ export async function generateDiagnosisAiSummary(
           },
           {
             role: "user",
-            content: userPrompt,
+            content: userMessage,
           },
         ],
         metadata: {
