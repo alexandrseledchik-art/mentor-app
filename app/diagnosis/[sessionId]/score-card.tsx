@@ -15,7 +15,7 @@ export function ScoreCard({
         <div className="result-copy">
           <strong>{getResultLevelText(summaryKey)}</strong>
           <p className="muted">
-            Это короткая оценка того, насколько бизнес сейчас работает как система.
+            Это короткая оценка того, насколько бизнес сейчас работает как система, а не за счёт ручного управления.
           </p>
         </div>
       </div>

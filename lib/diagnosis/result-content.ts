@@ -42,6 +42,31 @@ const dimensionStartMap: Record<string, string> = {
   data: "Выберите 5 главных метрик, по которым будете смотреть бизнес каждую неделю.",
 };
 
+const dimensionStrengthMap: Record<string, string> = {
+  commercial:
+    "Коммерция: продажи и выручка сейчас опираются на более собранную систему, чем большинство других контуров.",
+  external_environment:
+    "Внешняя среда и рынок: компания уже неплохо чувствует рынок и в целом учитывает внешние изменения в решениях.",
+  owner:
+    "Роль собственника: здесь уже появляется больше ясности в целях и границах решений.",
+  strategy:
+    "Стратегия: направление бизнеса уже начинает работать как ориентир для решений.",
+  product:
+    "Продукт: ценность продукта уже начинает складываться в более понятную систему.",
+  operations:
+    "Операции: процессы уже становятся более повторяемыми и управляемыми.",
+  finance:
+    "Финансы: по деньгам уже появляется базовая ясность и управляемость.",
+  team:
+    "Команда: работа с людьми уже выстраивается более системно.",
+  governance:
+    "Управление и риски: решения и контроль уже начинают работать более собранно.",
+  technology:
+    "Технологии: основные системы уже в большей степени поддерживают работу бизнеса.",
+  data:
+    "Данные и аналитика: данные уже начинают использоваться как опора для решений.",
+};
+
 export function getWeakDimensions(dimensionScores: DiagnosisDimensionScore[]) {
   return dimensionScores.filter((item) => item.averageScore <= 2);
 }
@@ -64,6 +89,13 @@ export function getResultLevelText(summaryKey: "low" | "medium" | "high" | null)
   }
 
   return "Средний уровень системности";
+}
+
+export function getDimensionStrength(dimension: string) {
+  return (
+    dimensionStrengthMap[dimension] ??
+    `${getDimensionTitle(dimension)}: эта зона уже выглядит более собранной и устойчивой.`
+  );
 }
 
 export function buildStartSteps(dimensionScores: DiagnosisDimensionScore[]) {

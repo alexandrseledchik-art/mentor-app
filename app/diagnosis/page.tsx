@@ -35,25 +35,9 @@ export default function DiagnosisPage() {
   useEffect(() => {
     async function loadData() {
       try {
-        const [dashboardResponse, startResponse] = await Promise.all([
-          fetch("/api/dashboard", { cache: "no-store" }),
-          fetch("/api/diagnosis/start", { cache: "no-store" }),
-        ]);
-
-        if (dashboardResponse.status === 404) {
-          router.replace("/onboarding");
-          return;
-        }
-
-        if (!dashboardResponse.ok) {
-          alert(
-            await readApiError(
-              dashboardResponse,
-              "Не удалось загрузить данные компании.",
-            ),
-          );
-          return;
-        }
+        const startResponse = await fetch("/api/diagnosis/start", {
+          cache: "no-store",
+        });
 
         if (!startResponse.ok) {
           alert(
@@ -65,17 +49,8 @@ export default function DiagnosisPage() {
           return;
         }
 
-        const dashboardData =
-          (await dashboardResponse.json()) as DashboardResponse;
         const startData =
           (await startResponse.json()) as DiagnosisStartGetResponse;
-
-        if (!dashboardData.company) {
-          router.replace("/onboarding");
-          return;
-        }
-
-        setCompanyId(dashboardData.company.id);
         setQuestionSetTitle(startData.questionSet.title);
         setQuestions(startData.questions);
       } catch {
@@ -126,13 +101,47 @@ export default function DiagnosisPage() {
     setIsSubmitting(true);
 
     try {
+      let resolvedCompanyId = companyId;
+
+      if (!resolvedCompanyId) {
+        const dashboardResponse = await fetch("/api/dashboard", {
+          cache: "no-store",
+        });
+
+        if (dashboardResponse.status === 404) {
+          router.push("/onboarding");
+          return;
+        }
+
+        if (!dashboardResponse.ok) {
+          alert(
+            await readApiError(
+              dashboardResponse,
+              "Не удалось загрузить данные компании.",
+            ),
+          );
+          return;
+        }
+
+        const dashboardData =
+          (await dashboardResponse.json()) as DashboardResponse;
+
+        if (!dashboardData.company) {
+          router.push("/onboarding");
+          return;
+        }
+
+        resolvedCompanyId = dashboardData.company.id;
+        setCompanyId(dashboardData.company.id);
+      }
+
       const sessionResponse = await fetch("/api/diagnosis/start", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          companyId,
+          companyId: resolvedCompanyId,
         }),
       });
 

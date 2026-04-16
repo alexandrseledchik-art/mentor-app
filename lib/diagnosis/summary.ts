@@ -4,6 +4,7 @@ import type {
   DiagnosisQuestion,
   DiagnosisResultSummary,
 } from "@/types/domain";
+import { getDimensionStrength } from "@/lib/diagnosis/result-content";
 
 function roundToOneDecimal(value: number) {
   return Math.round(value * 10) / 10;
@@ -82,7 +83,7 @@ function buildMediumSummary(
     description:
       "Главные элементы управления уже собраны, но еще не везде работают одинаково стабильно.",
     strengths: strongest.length
-      ? strongest.map((dimension) => `Сильная сторона сейчас: ${dimension}.`)
+      ? strongest.map((dimension) => getDimensionStrength(dimension))
       : ["Часть системы уже работает устойчиво."],
     risks: ["Рост может замедляться там, где процессы еще не доведены до системы."],
   };
@@ -102,7 +103,7 @@ function buildHighSummary(
     description:
       "У компании уже есть сильная управленческая база, на которую можно уверенно опираться.",
     strengths: strongest.length
-      ? strongest.map((dimension) => `Сильная сторона сейчас: ${dimension}.`)
+      ? strongest.map((dimension) => getDimensionStrength(dimension))
       : ["Ключевые контуры бизнеса работают стабильно."],
     risks: ["Следующий шаг - не терять фокус и усиливать самые важные зоны роста."],
   };

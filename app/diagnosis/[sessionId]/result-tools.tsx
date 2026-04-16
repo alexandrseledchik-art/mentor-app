@@ -15,6 +15,7 @@ export function ResultTools({ tools }: { tools: RecommendedTool[] }) {
           <article key={tool.id} className="tool-card">
             <h3>{tool.title}</h3>
             <p className="muted">{tool.summary}</p>
+            <p>{tool.whyRecommended}</p>
             <button
               type="button"
               onClick={() => window.open(tool.externalUrl, "_blank")}

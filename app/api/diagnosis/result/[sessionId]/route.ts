@@ -97,12 +97,13 @@ function mapAnswer(row: AnswerRow): DiagnosisAnswerInput {
   };
 }
 
-function mapRecommendedTool(row: ToolRow): RecommendedTool {
+function mapRecommendedTool(row: ToolRow, whyRecommended: string): RecommendedTool {
   return {
     id: row.id,
     slug: row.slug,
     title: row.title,
     summary: row.summary,
+    whyRecommended,
     externalUrl: `/tools/${row.slug}`,
   };
 }
@@ -134,6 +135,7 @@ async function loadRecommendedTools(params: {
   }
 
   const symptomIds = symptoms.map((item: SymptomRow) => item.id);
+  const symptomById = new Map((symptoms as SymptomRow[]).map((symptom) => [symptom.id, symptom]));
   const { data: mappings, error: mappingsError } = await supabase
     .from("symptom_tool_map")
     .select("*")
@@ -160,6 +162,7 @@ async function loadRecommendedTools(params: {
 
   for (const mapping of orderedMappings) {
     const tool = toolById.get(mapping.tool_id);
+    const symptom = symptomById.get(mapping.symptom_id);
 
     if (!tool) {
       continue;
@@ -169,9 +172,14 @@ async function loadRecommendedTools(params: {
       continue;
     }
 
-    recommended.push(mapRecommendedTool(tool));
+    recommended.push(
+      mapRecommendedTool(
+        tool,
+        symptom?.reason || "Этот инструмент связан с одной из самых слабых зон диагностики.",
+      ),
+    );
 
-    if (recommended.length === 5) {
+    if (recommended.length === 3) {
       break;
     }
   }

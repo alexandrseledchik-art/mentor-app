@@ -2,11 +2,13 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import {
-  buildStartSteps,
-  getDimensionMeaning,
-  getDimensionTitle,
+  getDomainExplanation,
+  getDomainLabel,
+  getDomainStrengthText,
+  getStartSteps,
+  getStrongDomains,
   getWeakDimensions,
-} from "@/lib/diagnosis/result-content";
+} from "./result-copy";
 import { ResultTools } from "./result-tools";
 import { ScoreCard } from "./score-card";
 
@@ -50,7 +52,8 @@ export default async function DiagnosisResultPage({
   const { sessionId } = await params;
   const data = await loadResult(sessionId);
   const weakDimensions = getWeakDimensions(data.dimensionScores);
-  const startSteps = buildStartSteps(data.dimensionScores);
+  const startSteps = getStartSteps(data.dimensionScores);
+  const strongDomains = getStrongDomains(data.dimensionScores);
 
   return (
     <main className="page-shell">
@@ -72,11 +75,12 @@ export default async function DiagnosisResultPage({
           />
 
           <section>
-            <h2>Основные проблемы</h2>
+            <h2>Основные зоны внимания</h2>
+            <p className="muted">Вот где сейчас больше всего теряется управляемость и рост:</p>
             <ul className="plain-list">
               {weakDimensions.length > 0 ? weakDimensions.map((item) => (
                 <li key={item.dimension}>
-                  {getDimensionTitle(item.dimension)}
+                  {getDomainLabel(item.dimension)}
                 </li>
               )) : (
                 <li>Явно слабых зон не видно по этой диагностике.</li>
@@ -89,8 +93,8 @@ export default async function DiagnosisResultPage({
             <ul className="plain-list">
               {weakDimensions.length > 0 ? weakDimensions.map((item) => (
                 <li key={item.dimension}>
-                  <strong>{getDimensionTitle(item.dimension)}:</strong>{" "}
-                  {getDimensionMeaning(item.dimension)}
+                  <strong>{getDomainLabel(item.dimension)}:</strong>{" "}
+                  {getDomainExplanation(item.dimension)}
                 </li>
               )) : (
                 <li>Базовые управленческие контуры выглядят достаточно устойчиво.</li>
@@ -110,24 +114,27 @@ export default async function DiagnosisResultPage({
           </section>
 
           <section>
-            <h2>Дополнительные сигналы</h2>
-            <ul className="plain-list">
-              {data.summary.risks.map((item) => (
-                <li key={item}>
-                  {item}
-                </li>
-              ))}
-            </ul>
+            <h2>Дополнительный сигнал</h2>
+            <p>
+              Рост может замедляться именно в тех местах, где процессы ещё не стали
+              системой и зависят от ручного управления.
+            </p>
           </section>
 
           <section>
-            <h2>Что уже опирается на систему</h2>
+            <h2>Что уже начинает работать как система</h2>
             <ul className="plain-list">
-              {data.summary.strengths.map((item) => (
-                <li key={item}>
-                  {item}
+              {strongDomains.map((item) => (
+                <li key={item.dimension}>
+                  {getDomainStrengthText(item.dimension)}
                 </li>
               ))}
+              {strongDomains.length === 0 ? (
+                <li>
+                  Пока рано говорить о явно сильных контурах, но база для роста уже может
+                  быть собрана на следующем шаге.
+                </li>
+              ) : null}
             </ul>
           </section>
 

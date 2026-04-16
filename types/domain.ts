@@ -144,5 +144,6 @@ export interface RecommendedTool {
   slug: string;
   title: string;
   summary: string;
+  whyRecommended: string;
   externalUrl: string;
 }

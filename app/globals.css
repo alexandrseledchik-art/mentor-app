@@ -139,6 +139,26 @@ p {
   background: var(--surface-strong);
 }
 
+.tool-card h2 {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.1;
+}
+
+.tool-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tool-meta span {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #f2ece3;
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .plain-list {
   margin: 12px 0 0;
   padding-left: 20px;
