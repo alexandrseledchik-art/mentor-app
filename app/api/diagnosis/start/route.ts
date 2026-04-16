@@ -223,12 +223,22 @@ async function loadQuestionSet(code: string) {
     return { error: "Question set not found." as const };
   }
 
-  const { data: questions, error: questionsError } = await supabase
+  let questionsResult = await supabase
     .from("diagnosis_questions")
     .select("*")
     .eq("question_set_id", questionSet.id)
     .order("order_index", { ascending: true, nullsFirst: false })
     .order("position", { ascending: true });
+
+  if (questionsResult.error) {
+    questionsResult = await supabase
+      .from("diagnosis_questions")
+      .select("*")
+      .eq("question_set_id", questionSet.id)
+      .order("position", { ascending: true });
+  }
+
+  const { data: questions, error: questionsError } = questionsResult;
 
   if (questionsError || !questions) {
     return { error: "Questions not found." as const };
