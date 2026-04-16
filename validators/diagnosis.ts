@@ -134,6 +134,51 @@ export const diagnosisAiSummarySchema = z.object({
   firstSteps: z.array(z.string().min(1)).length(3),
 });
 
+export const diagnosisChatContextSchema = z.object({
+  company: z
+    .object({
+      name: z.string().nullable(),
+      industry: z.string().nullable(),
+      teamSize: z.string().nullable(),
+      revenue: z.string().nullable(),
+      goal: z.string().nullable(),
+    })
+    .nullable(),
+  scores: z.object({
+    owner: z.number().nullable(),
+    market: z.number().nullable(),
+    strategy: z.number().nullable(),
+    product: z.number().nullable(),
+    sales: z.number().nullable(),
+    operations: z.number().nullable(),
+    finance: z.number().nullable(),
+    team: z.number().nullable(),
+    management: z.number().nullable(),
+    tech: z.number().nullable(),
+    data: z.number().nullable(),
+  }),
+  summary: z.object({
+    main_summary: z.string().min(1),
+    main_focus: z.string().min(1),
+    why_now: z.array(z.string().min(1)).length(3),
+    strengths: z.array(z.string().min(1)).length(2),
+    first_steps: z.array(z.string().min(1)).length(3),
+  }),
+});
+
+export const diagnosisChatRequestSchema = z.object({
+  sessionId: z.string().uuid(),
+  message: z.string().trim().min(1).max(2000),
+});
+
+export const diagnosisChatReplySchema = z.object({
+  reply: z.string().trim().min(1),
+});
+
+export const diagnosisChatResponseSchema = diagnosisChatReplySchema.extend({
+  context: diagnosisChatContextSchema,
+});
+
 export const diagnosisResultResponseSchema = z.object({
   questionSet: diagnosisQuestionSetSchema,
   questions: z.array(diagnosisQuestionSchema),
@@ -163,6 +208,8 @@ export type DiagnosisSubmitRequestInput = z.infer<
 export type DiagnosisSubmitResponseInput = z.infer<
   typeof diagnosisSubmitResponseSchema
 >;
+export type DiagnosisChatRequestInput = z.infer<typeof diagnosisChatRequestSchema>;
+export type DiagnosisChatResponseInput = z.infer<typeof diagnosisChatResponseSchema>;
 export type DiagnosisResultResponseInput = z.infer<
   typeof diagnosisResultResponseSchema
 >;

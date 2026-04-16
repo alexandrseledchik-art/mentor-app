@@ -173,3 +173,37 @@ export interface DiagnosisAiSummary {
   strengths: string[];
   firstSteps: string[];
 }
+
+export interface DiagnosisChatContext {
+  company: {
+    name: string | null;
+    industry: string | null;
+    teamSize: string | null;
+    revenue: string | null;
+    goal: string | null;
+  } | null;
+  scores: {
+    owner: number | null;
+    market: number | null;
+    strategy: number | null;
+    product: number | null;
+    sales: number | null;
+    operations: number | null;
+    finance: number | null;
+    team: number | null;
+    management: number | null;
+    tech: number | null;
+    data: number | null;
+  };
+  summary: {
+    main_summary: string;
+    main_focus: string;
+    why_now: string[];
+    strengths: string[];
+    first_steps: string[];
+  };
+}
+
+export interface DiagnosisChatReply {
+  reply: string;
+}

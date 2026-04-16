@@ -1,6 +1,8 @@
 import type {
   DiagnosisAnswerInput,
   DiagnosisDimensionScore,
+  DiagnosisChatContext,
+  DiagnosisChatReply,
   Company,
   DiagnosisQuestion,
   DiagnosisQuestionSet,
@@ -77,6 +79,15 @@ export interface DiagnosisResultResponse {
   tools: RecommendedTool[];
   summaryContext: DiagnosisSummaryContext;
   aiSummary: DiagnosisAiSummary | null;
+}
+
+export interface DiagnosisChatRequest {
+  sessionId: string;
+  message: string;
+}
+
+export interface DiagnosisChatResponse extends DiagnosisChatReply {
+  context: DiagnosisChatContext;
 }
 
 export interface ToolsLibraryResponse {

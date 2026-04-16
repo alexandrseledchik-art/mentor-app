@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -56,6 +57,7 @@ export default async function DiagnosisResultPage({
   const weakDimensions = getWeakDimensions(data.dimensionScores);
   const startSteps = getStartSteps(data.dimensionScores);
   const strongDomains = getStrongDomains(data.dimensionScores);
+  const hasAiSummary = data.aiSummary !== null;
   const mainSummary = data.aiSummary?.mainSummary ?? getFallbackMainSummary(data.dimensionScores);
   const mainFocus = data.aiSummary?.mainFocus ?? getPrimaryFocus(data.dimensionScores);
   const whyNowItems = data.aiSummary?.whyNow ?? [getFallbackWhyNow(data.dimensionScores)];
@@ -89,6 +91,12 @@ export default async function DiagnosisResultPage({
             }
           />
 
+          <div className="action-row">
+            <Link className="button-link" href={`/diagnosis/${sessionId}/chat`}>
+              Разобрать результат с ИИ
+            </Link>
+          </div>
+
           <section>
             <h2>Главный вывод</h2>
             <p>{mainSummary}</p>
@@ -106,15 +114,17 @@ export default async function DiagnosisResultPage({
                 <li key={`why-now-${index}`}>{item}</li>
               ))}
             </ul>
-            <ul className="plain-list">
-              {weakDimensions.length > 0 ? weakDimensions.map((item) => (
-                <li key={item.dimension}>
-                  {getDomainExplanation(item.dimension)}
-                </li>
-              )) : (
-                <li>Сейчас критических провалов не видно, поэтому важнее удержать управляемость и не вернуть ключевые контуры в ручной режим.</li>
-              )}
-            </ul>
+            {!hasAiSummary ? (
+              <ul className="plain-list">
+                {weakDimensions.length > 0 ? weakDimensions.map((item) => (
+                  <li key={item.dimension}>
+                    {getDomainExplanation(item.dimension)}
+                  </li>
+                )) : (
+                  <li>Сейчас критических провалов не видно, поэтому важнее удержать управляемость и не вернуть ключевые контуры в ручной режим.</li>
+                )}
+              </ul>
+            ) : null}
           </section>
 
           <section>

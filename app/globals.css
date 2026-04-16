@@ -112,6 +112,34 @@ p {
   margin-top: 12px;
 }
 
+.chat-log {
+  display: grid;
+  gap: 12px;
+}
+
+.chat-message {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface-strong);
+}
+
+.chat-message-user {
+  background: #f2ece3;
+}
+
+.chat-message-assistant {
+  background: var(--surface-strong);
+}
+
+.starter-button {
+  width: auto;
+  background: #ece4da;
+  color: var(--text);
+}
+
 .option-stack {
   display: grid;
   gap: 12px;
