@@ -63,11 +63,18 @@ export default function OnboardingPage() {
         body: JSON.stringify(parsed.data),
       });
 
-      const data = (await response.json()) as { error?: string };
+      const data = (await response.json()) as {
+        error?: string;
+        company?: { id: string };
+      };
 
       if (!response.ok) {
         alert(data.error ?? "Не удалось сохранить компанию.");
         return;
+      }
+
+      if (data.company?.id) {
+        window.localStorage.setItem("mentor_company_id", data.company.id);
       }
 
       router.push("/dashboard");

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { getCurrentUserId } from "@/lib/session";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import type { DashboardResponse } from "@/types/api";
 import type { Database } from "@/types/db";
@@ -82,38 +83,55 @@ function mapTool(row: ToolRow): Tool {
 
 export async function GET() {
   const supabase = getSupabaseAdminClient();
+  const currentUserId = await getCurrentUserId();
+
+  console.log("DASHBOARD USER:", currentUserId);
+
+  if (!currentUserId) {
+    console.error("DASHBOARD COMPANY LOOKUP ERROR: missing current user id");
+    return NextResponse.json({ error: "Пользователь не найден." }, { status: 401 });
+  }
 
   const { data: company, error: companyError } = await supabase
     .from("companies")
     .select("*")
-    .order("created_at", { ascending: false })
-    .limit(1)
+    .eq("user_id", currentUserId)
     .maybeSingle();
 
   if (companyError) {
+    console.error("DASHBOARD COMPANY LOOKUP ERROR:", companyError);
     return NextResponse.json({ error: "Не удалось загрузить компанию." }, { status: 500 });
   }
 
   if (!company) {
+    console.error("DASHBOARD COMPANY NOT FOUND:", {
+      userId: currentUserId,
+    });
     return NextResponse.json({ error: "Компания не найдена." }, { status: 404 });
   }
+
+  console.log("DASHBOARD COMPANY:", {
+    userId: currentUserId,
+    companyId: company.id,
+    companyUserId: company.user_id,
+  });
 
   const [{ data: authUserResponse }, { data: latestDiagnosis }, { data: featuredTools }] =
     await Promise.all([
       supabase.auth.admin.getUserById(company.user_id),
-    supabase
-      .from("diagnosis_sessions")
-      .select("*")
-      .eq("company_id", company.id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    supabase
-      .from("tools")
-      .select("*")
-      .eq("is_featured", true)
-      .order("created_at", { ascending: false })
-      .limit(3),
+      supabase
+        .from("diagnosis_sessions")
+        .select("*")
+        .eq("company_id", company.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("tools")
+        .select("*")
+        .eq("is_featured", true)
+        .order("created_at", { ascending: false })
+        .limit(3),
     ]);
 
   const payload: DashboardResponse = {

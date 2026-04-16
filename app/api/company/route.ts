@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { SESSION_USER_COOKIE } from "@/lib/session";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { companyPayloadSchema } from "@/validators/company";
 
@@ -65,7 +66,23 @@ export async function POST(request: Request) {
     );
   }
 
-  return NextResponse.json({
+  console.log("ONBOARDING USER CREATED:", authUser.id);
+  console.log("ONBOARDING COMPANY CREATED:", {
+    companyId: company.id,
+    companyUserId: authUser.id,
+  });
+
+  const response = NextResponse.json({
     company,
   });
+
+  response.cookies.set(SESSION_USER_COOKIE, authUser.id, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 30,
+  });
+
+  return response;
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { parseQuestionOptions } from "@/lib/diagnosis/mappers";
+import { getCurrentUserId } from "@/lib/session";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import diagnosisQuestionsSeed from "@/data/diagnosis-questions.express.ui.json";
 import type {
@@ -336,16 +337,48 @@ export async function POST(request: Request) {
   }
 
   const supabase = getSupabaseAdminClient();
+  const currentUserId = await getCurrentUserId();
 
-  const { data: company, error: companyError } = await supabase
-    .from("companies")
-    .select("id")
-    .eq("id", companyId)
-    .single();
+  console.log("DIAGNOSIS START USER:", {
+    userId: currentUserId,
+    payloadCompanyId: companyId,
+  });
 
-  if (companyError || !company) {
-    return NextResponse.json({ error: "Company not found." }, { status: 404 });
+  let companyQuery = supabase.from("companies").select("id, user_id");
+
+  if (currentUserId) {
+    companyQuery = companyQuery.eq("user_id", currentUserId);
+  } else {
+    companyQuery = companyQuery.eq("id", companyId);
   }
+
+  const { data: company, error: companyError } = await companyQuery.maybeSingle();
+
+  console.log("DIAGNOSIS START COMPANY:", company);
+
+  if (companyError) {
+    console.error("DIAGNOSIS START COMPANY ERROR:", companyError);
+    return NextResponse.json(
+      { error: "Не удалось определить компанию для диагностики." },
+      { status: 500 },
+    );
+  }
+
+  if (!company) {
+    console.error("DIAGNOSIS START COMPANY NOT FOUND:", {
+      userId: currentUserId,
+      payloadCompanyId: companyId,
+      reason: currentUserId
+        ? "No company linked to current auth user."
+        : "No company found by provided companyId.",
+    });
+    return NextResponse.json(
+      { error: "Компания не найдена. Вернитесь в онбординг и проверьте профиль компании." },
+      { status: 404 },
+    );
+  }
+
+  console.log("DIAGNOSIS START COMPANY USER ID:", company.user_id);
 
   const { data: session, error: sessionError } = await supabase
     .from("diagnosis_sessions")

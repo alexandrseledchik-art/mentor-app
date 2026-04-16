@@ -12,6 +12,7 @@ import type {
 import type { DiagnosisQuestion } from "@/types/domain";
 
 type AnswersState = Record<string, number>;
+const COMPANY_STORAGE_KEY = "mentor_company_id";
 
 export default function DiagnosisPage() {
   const router = useRouter();
@@ -32,9 +33,23 @@ export default function DiagnosisPage() {
     }
   }
 
+  function readStoredCompanyId() {
+    if (typeof window === "undefined") {
+      return null;
+    }
+
+    return window.localStorage.getItem(COMPANY_STORAGE_KEY);
+  }
+
   useEffect(() => {
     async function loadData() {
       try {
+        const storedCompanyId = readStoredCompanyId();
+
+        if (storedCompanyId) {
+          setCompanyId(storedCompanyId);
+        }
+
         const startResponse = await fetch("/api/diagnosis/start", {
           cache: "no-store",
         });
@@ -92,16 +107,14 @@ export default function DiagnosisPage() {
       return;
     }
 
-    if (!companyId) {
-      alert("Компания не найдена. Вернитесь в онбординг.");
-      router.push("/onboarding");
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
-      let resolvedCompanyId = companyId;
+      let resolvedCompanyId = companyId ?? readStoredCompanyId();
+
+      if (resolvedCompanyId && resolvedCompanyId !== companyId) {
+        setCompanyId(resolvedCompanyId);
+      }
 
       if (!resolvedCompanyId) {
         const dashboardResponse = await fetch("/api/dashboard", {
@@ -127,12 +140,20 @@ export default function DiagnosisPage() {
           (await dashboardResponse.json()) as DashboardResponse;
 
         if (!dashboardData.company) {
+          alert("Компания не найдена. Вернитесь в онбординг.");
           router.push("/onboarding");
           return;
         }
 
         resolvedCompanyId = dashboardData.company.id;
         setCompanyId(dashboardData.company.id);
+        window.localStorage.setItem(COMPANY_STORAGE_KEY, dashboardData.company.id);
+      }
+
+      if (!resolvedCompanyId) {
+        alert("Компания не найдена. Вернитесь в онбординг.");
+        router.push("/onboarding");
+        return;
       }
 
       const sessionResponse = await fetch("/api/diagnosis/start", {
