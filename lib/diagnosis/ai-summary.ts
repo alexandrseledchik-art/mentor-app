@@ -234,6 +234,50 @@ FIRST_STEPS:
 * жёстко
 * по делу`;
 
+const DECISION_READY_CONSTRAINTS = `
+
+=== КРИТИЧЕСКИЕ UX-ОГРАНИЧЕНИЯ ===
+
+MAIN_SUMMARY:
+
+* максимум 2 предложения
+* должен помещаться в 1 экран без скролла
+* должен читаться за 5 секунд
+
+MAIN_FOCUS:
+
+* только 1 идея
+* нельзя использовать "и"
+* если есть несколько смыслов — выбрать главный
+
+WHY_NOW:
+
+* строго 3 пункта
+* не больше
+* каждый пункт = причина → эффект
+* убрать всё вторичное
+
+FIRST_STEPS:
+
+* первый шаг = конкретное действие (можно сделать сегодня)
+* без абстрактных формулировок
+
+ГЛАВНОЕ ПРАВИЛО:
+
+Ты не объясняешь бизнес.
+Ты сокращаешь сложность до одного решения.
+
+Если сомневаешься:
+
+* убери лишнее
+* оставь главное
+
+ПИШИ КАК ДЛЯ СОБСТВЕННИКА, У КОТОРОГО 5 МИНУТ:
+
+* коротко
+* жёстко
+* без перегруза`;
+
 function formatList(items: string[]) {
   if (items.length === 0) {
     return "- нет данных";
@@ -360,7 +404,7 @@ export async function generateDiagnosisAiSummary(
         input: [
           {
             role: "system",
-            content: `${systemPrompt}${OUTPUT_STYLE_REMINDER}${UX_CONSTRAINTS}`,
+            content: `${systemPrompt}${OUTPUT_STYLE_REMINDER}${UX_CONSTRAINTS}${DECISION_READY_CONSTRAINTS}`,
           },
           {
             role: "user",
