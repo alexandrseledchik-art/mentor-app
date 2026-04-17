@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 
 import { parseQuestionOptions } from "@/lib/diagnosis/mappers";
-import { getCurrentUserId } from "@/lib/session";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
+import { getCurrentAppUser } from "@/lib/workspace/get-current-app-user";
+import { getOrCreateWorkspace } from "@/lib/workspace/get-or-create-workspace";
+import { startOrResumeDiagnosis } from "@/lib/workspace/start-or-resume-diagnosis";
 import diagnosisQuestionsSeed from "@/data/diagnosis-questions.express.ui.json";
 import type {
   DiagnosisStartGetResponse,
@@ -110,6 +112,37 @@ function mapQuestion(row: QuestionRow): DiagnosisQuestion {
   };
 }
 
+function parseAnswersSnapshot(value: Database["public"]["Tables"]["diagnosis_sessions"]["Row"]["answers"]) {
+  if (!Array.isArray(value)) {
+    return null;
+  }
+
+  const parsed = value.reduce<NonNullable<DiagnosisSession["answersSnapshot"]>>((accumulator, item) => {
+    if (
+      item &&
+      typeof item === "object" &&
+      !Array.isArray(item) &&
+      "questionId" in item &&
+      "answerValue" in item &&
+      typeof item.questionId === "string" &&
+      typeof item.answerValue === "number"
+    ) {
+      accumulator.push({
+        questionId: item.questionId,
+        answerValue: item.answerValue,
+        answerLabel:
+          "answerLabel" in item && typeof item.answerLabel === "string"
+            ? item.answerLabel
+            : null,
+      });
+    }
+
+    return accumulator;
+  }, []);
+
+  return parsed.length > 0 ? parsed : null;
+}
+
 function mapSession(row: SessionRow): DiagnosisSession {
   return {
     id: row.id,
@@ -121,6 +154,8 @@ function mapSession(row: SessionRow): DiagnosisSession {
       row.summary_key === "low" || row.summary_key === "medium" || row.summary_key === "high"
         ? row.summary_key
         : null,
+    currentStep: row.current_step ?? null,
+    answersSnapshot: parseAnswersSnapshot(row.answers),
     createdAt: row.created_at,
     completedAt: row.completed_at,
   };
@@ -337,84 +372,56 @@ export async function POST(request: Request) {
   }
 
   const supabase = getSupabaseAdminClient();
-  const currentUserId = await getCurrentUserId();
+  const currentAppUser = await getCurrentAppUser();
 
-  console.log("DIAGNOSIS START USER:", {
-    userId: currentUserId,
-    payloadCompanyId: companyId,
-  });
-
-  let companyQuery = supabase.from("companies").select("id, user_id");
-
-  if (currentUserId) {
-    companyQuery = companyQuery.eq("user_id", currentUserId);
-  } else {
-    if (!companyId) {
-      console.error("DIAGNOSIS START COMPANY LOOKUP ERROR:", {
-        userId: currentUserId,
-        payloadCompanyId: companyId,
-        reason: "Missing both auth user cookie and fallback companyId.",
-      });
-      return NextResponse.json(
-        { error: "Компания не найдена. Вернитесь в онбординг и проверьте профиль компании." },
-        { status: 404 },
-      );
-    }
-
-    companyQuery = companyQuery.eq("id", companyId);
+  if (!currentAppUser) {
+    return NextResponse.json({ error: "Пользователь не найден." }, { status: 401 });
   }
 
-  const { data: company, error: companyError } = await companyQuery.maybeSingle();
+  const workspace = await getOrCreateWorkspace(currentAppUser.id);
+  const resolvedCompanyId = workspace.activeCompanyId ?? companyId ?? null;
 
-  console.log("DIAGNOSIS START COMPANY:", company);
-
-  if (companyError) {
-    console.error("DIAGNOSIS START COMPANY ERROR:", companyError);
-    return NextResponse.json(
-      { error: "Не удалось определить компанию для диагностики." },
-      { status: 500 },
-    );
-  }
-
-  if (!company) {
-    console.error("DIAGNOSIS START COMPANY NOT FOUND:", {
-      userId: currentUserId,
-      payloadCompanyId: companyId,
-      reason: currentUserId
-        ? "No company linked to current auth user."
-        : companyId
-          ? "No company found by provided companyId."
-          : "No auth user cookie and no fallback companyId provided.",
-    });
+  if (!resolvedCompanyId) {
     return NextResponse.json(
       { error: "Компания не найдена. Вернитесь в онбординг и проверьте профиль компании." },
       { status: 404 },
     );
   }
 
-  console.log("DIAGNOSIS START COMPANY USER ID:", company.user_id);
+  const { data: company, error: companyError } = await supabase
+    .from("companies")
+    .select("id")
+    .eq("id", resolvedCompanyId)
+    .eq("user_id", currentAppUser.id)
+    .maybeSingle();
 
-  const { data: session, error: sessionError } = await supabase
-    .from("diagnosis_sessions")
-    .insert({
-      company_id: company.id,
-      question_set_id: questionSetResult.questionSet.id,
-      status: "in_progress",
-    })
-    .select("*")
-    .single();
+  if (companyError || !company) {
+    return NextResponse.json(
+      { error: "Не удалось определить компанию для диагностики." },
+      { status: 500 },
+    );
+  }
 
-  if (sessionError || !session) {
+  let sessionResult;
+
+  try {
+    sessionResult = await startOrResumeDiagnosis({
+      userId: currentAppUser.id,
+      companyId: company.id,
+      questionSetId: questionSetResult.questionSet.id,
+    });
+  } catch (error) {
+    console.error("DIAGNOSIS START SESSION ERROR:", error);
     return NextResponse.json({ error: "Failed to create diagnosis session." }, { status: 500 });
   }
 
   const payload: DiagnosisStartResponse = {
-    session: mapSession(session),
+    session: sessionResult.session,
     questionSet: questionSetResult.questionSet,
     questions: questionSetResult.questions,
   };
 
   return NextResponse.json(diagnosisStartResponseSchema.parse(payload), {
-    status: 201,
+    status: sessionResult.resumed ? 200 : 201,
   });
 }

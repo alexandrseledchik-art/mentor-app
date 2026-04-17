@@ -79,6 +79,8 @@ export interface DiagnosisSession {
   status: DiagnosisSessionStatus;
   totalScore: number | null;
   summaryKey: string | null;
+  currentStep?: number | null;
+  answersSnapshot?: DiagnosisAnswerInput[] | null;
   createdAt: string;
   completedAt: string | null;
 }

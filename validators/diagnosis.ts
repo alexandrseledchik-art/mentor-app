@@ -32,6 +32,12 @@ export const diagnosisQuestionSchema = z.object({
   createdAt: z.string().min(1),
 });
 
+export const diagnosisAnswerInputSchema = z.object({
+  questionId: z.string().uuid(),
+  answerValue: z.number().int().min(1).max(5),
+  answerLabel: z.string().min(1).nullable().optional(),
+});
+
 export const diagnosisSessionSchema = z.object({
   id: z.string().uuid(),
   companyId: z.string().uuid(),
@@ -39,14 +45,10 @@ export const diagnosisSessionSchema = z.object({
   status: z.enum(["in_progress", "completed"]),
   totalScore: z.number().int().nullable(),
   summaryKey: z.enum(["low", "medium", "high"]).nullable(),
+  currentStep: z.number().int().min(1).nullable().optional(),
+  answersSnapshot: z.array(diagnosisAnswerInputSchema).nullable().optional(),
   createdAt: z.string().min(1),
   completedAt: z.string().nullable(),
-});
-
-export const diagnosisAnswerInputSchema = z.object({
-  questionId: z.string().uuid(),
-  answerValue: z.number().int().min(1).max(5),
-  answerLabel: z.string().min(1).nullable().optional(),
 });
 
 export const diagnosisSubmitAnswerSchema = z.object({

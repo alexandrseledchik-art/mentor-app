@@ -1,63 +1,32 @@
 import { NextResponse } from "next/server";
 
-import { getCurrentUserId } from "@/lib/session";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
+import { getDashboardWorkspaceContext } from "@/lib/workspace/get-dashboard-context";
 import type { DashboardResponse } from "@/types/api";
 import type { Database } from "@/types/db";
-import type { Company, DiagnosisSession, Tool, User } from "@/types/domain";
+import type { Tool, User } from "@/types/domain";
 
-type CompanyRow = Database["public"]["Tables"]["companies"]["Row"];
-type DiagnosisSessionRow = Database["public"]["Tables"]["diagnosis_sessions"]["Row"];
 type ToolRow = Database["public"]["Tables"]["tools"]["Row"];
 
 function mapUser(params: {
   id: string;
-  email: string | null;
+  telegramUserId: number;
+  telegramUsername: string | null;
+  firstName: string;
+  lastName: string | null;
   createdAt: string;
   updatedAt: string;
 }): User {
   return {
     id: params.id,
-    telegramUserId: 0,
-    telegramUsername: params.email,
-    firstName: "User",
-    lastName: null,
+    telegramUserId: params.telegramUserId,
+    telegramUsername: params.telegramUsername,
+    firstName: params.firstName,
+    lastName: params.lastName,
     languageCode: null,
     photoUrl: null,
     createdAt: params.createdAt,
     updatedAt: params.updatedAt,
-  };
-}
-
-function mapCompany(row: CompanyRow): Company {
-  return {
-    id: row.id,
-    userId: row.user_id,
-    name: row.name,
-    industry: row.industry,
-    teamSize: row.team_size,
-    revenueRange: row.revenue_range,
-    description: row.description,
-    primaryGoal: row.primary_goal,
-    onboardingCompleted: row.onboarding_completed,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
-}
-
-function mapDiagnosisSession(row: DiagnosisSessionRow): DiagnosisSession {
-  return {
-    id: row.id,
-    companyId: row.company_id,
-    questionSetId: row.question_set_id,
-    status: row.status === "completed" ? "completed" : "in_progress",
-    totalScore: row.total_score,
-    summaryKey:
-      row.summary_key === "low" || row.summary_key === "medium" || row.summary_key === "high"
-        ? row.summary_key
-        : null,
-    createdAt: row.created_at,
-    completedAt: row.completed_at,
   };
 }
 
@@ -83,66 +52,35 @@ function mapTool(row: ToolRow): Tool {
 
 export async function GET() {
   const supabase = getSupabaseAdminClient();
-  const currentUserId = await getCurrentUserId();
+  const dashboardContext = await getDashboardWorkspaceContext();
 
-  console.log("DASHBOARD USER:", currentUserId);
-
-  if (!currentUserId) {
-    console.error("DASHBOARD COMPANY LOOKUP ERROR: missing current user id");
+  if (!dashboardContext) {
     return NextResponse.json({ error: "Пользователь не найден." }, { status: 401 });
   }
 
-  const { data: company, error: companyError } = await supabase
-    .from("companies")
-    .select("*")
-    .eq("user_id", currentUserId)
-    .maybeSingle();
-
-  if (companyError) {
-    console.error("DASHBOARD COMPANY LOOKUP ERROR:", companyError);
-    return NextResponse.json({ error: "Не удалось загрузить компанию." }, { status: 500 });
-  }
-
-  if (!company) {
-    console.error("DASHBOARD COMPANY NOT FOUND:", {
-      userId: currentUserId,
-    });
+  if (!dashboardContext.activeCompany) {
     return NextResponse.json({ error: "Компания не найдена." }, { status: 404 });
   }
 
-  console.log("DASHBOARD COMPANY:", {
-    userId: currentUserId,
-    companyId: company.id,
-    companyUserId: company.user_id,
-  });
-
-  const [{ data: authUserResponse }, { data: latestDiagnosis }, { data: featuredTools }] =
-    await Promise.all([
-      supabase.auth.admin.getUserById(company.user_id),
-      supabase
-        .from("diagnosis_sessions")
-        .select("*")
-        .eq("company_id", company.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-      supabase
-        .from("tools")
-        .select("*")
-        .eq("is_featured", true)
-        .order("created_at", { ascending: false })
-        .limit(3),
-    ]);
+  const { data: featuredTools } = await supabase
+    .from("tools")
+    .select("*")
+    .eq("is_featured", true)
+    .order("created_at", { ascending: false })
+    .limit(3);
 
   const payload: DashboardResponse = {
     user: mapUser({
-      id: company.user_id,
-      email: authUserResponse.user?.email ?? null,
-      createdAt: company.created_at,
-      updatedAt: company.updated_at,
+      id: dashboardContext.user.id,
+      telegramUserId: dashboardContext.user.telegramUserId,
+      telegramUsername: dashboardContext.user.telegramUsername,
+      firstName: dashboardContext.user.firstName,
+      lastName: dashboardContext.user.lastName,
+      createdAt: dashboardContext.user.createdAt,
+      updatedAt: dashboardContext.user.updatedAt,
     }),
-    company: mapCompany(company),
-    latestDiagnosis: latestDiagnosis ? mapDiagnosisSession(latestDiagnosis) : null,
+    company: dashboardContext.activeCompany,
+    latestDiagnosis: dashboardContext.latestDiagnosis,
     featuredTools: (featuredTools ?? []).map(mapTool),
   };
 

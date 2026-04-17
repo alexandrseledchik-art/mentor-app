@@ -5,11 +5,10 @@ import { useRouter } from "next/navigation";
 
 import type {
   DashboardResponse,
-  DiagnosisStartGetResponse,
   DiagnosisStartResponse,
   DiagnosisSubmitResponse,
 } from "@/types/api";
-import type { DiagnosisQuestion } from "@/types/domain";
+import type { DiagnosisAnswerInput, DiagnosisQuestion } from "@/types/domain";
 
 type AnswersState = Record<string, number>;
 const COMPANY_STORAGE_KEY = "mentor_company_id";
@@ -17,6 +16,7 @@ const COMPANY_STORAGE_KEY = "mentor_company_id";
 export default function DiagnosisPage() {
   const router = useRouter();
   const [companyId, setCompanyId] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const [questionSetTitle, setQuestionSetTitle] = useState("");
   const [questions, setQuestions] = useState<DiagnosisQuestion[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -41,6 +41,52 @@ export default function DiagnosisPage() {
     return window.localStorage.getItem(COMPANY_STORAGE_KEY);
   }
 
+  function buildSubmitAnswers(questionList: DiagnosisQuestion[], values: AnswersState) {
+    return questionList
+      .filter((question) => typeof values[question.code] === "number")
+      .map((question) => ({
+        questionId: question.id,
+        value: values[question.code],
+      }));
+  }
+
+  function restoreAnswersFromSnapshot(
+    questionList: DiagnosisQuestion[],
+    snapshot: DiagnosisAnswerInput[] | null | undefined,
+  ) {
+    if (!snapshot?.length) {
+      return {};
+    }
+
+    const questionCodeById = new Map(questionList.map((question) => [question.id, question.code]));
+
+    return snapshot.reduce<AnswersState>((accumulator, item) => {
+      const questionCode = questionCodeById.get(item.questionId);
+
+      if (questionCode) {
+        accumulator[questionCode] = item.answerValue;
+      }
+
+      return accumulator;
+    }, {});
+  }
+
+  function resolveInitialQuestionIndex(params: {
+    questionCount: number;
+    currentStep: number | null | undefined;
+    restoredAnswersCount: number;
+  }) {
+    if (params.questionCount === 0) {
+      return 0;
+    }
+
+    if (typeof params.currentStep === "number" && params.currentStep >= 1) {
+      return Math.min(params.currentStep - 1, params.questionCount - 1);
+    }
+
+    return Math.min(params.restoredAnswersCount, params.questionCount - 1);
+  }
+
   useEffect(() => {
     async function loadData() {
       try {
@@ -51,7 +97,16 @@ export default function DiagnosisPage() {
         }
 
         const startResponse = await fetch("/api/diagnosis/start", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
           cache: "no-store",
+          body: JSON.stringify(
+            storedCompanyId
+              ? { companyId: storedCompanyId }
+              : {},
+          ),
         });
 
         if (!startResponse.ok) {
@@ -65,9 +120,25 @@ export default function DiagnosisPage() {
         }
 
         const startData =
-          (await startResponse.json()) as DiagnosisStartGetResponse;
+          (await startResponse.json()) as DiagnosisStartResponse;
+        const restoredAnswers = restoreAnswersFromSnapshot(
+          startData.questions,
+          startData.session.answersSnapshot,
+        );
+
+        setSessionId(startData.session.id);
         setQuestionSetTitle(startData.questionSet.title);
         setQuestions(startData.questions);
+        setAnswers(restoredAnswers);
+        setCurrentQuestionIndex(
+          resolveInitialQuestionIndex({
+            questionCount: startData.questions.length,
+            currentStep: startData.session.currentStep,
+            restoredAnswersCount: Object.keys(restoredAnswers).length,
+          }),
+        );
+        setCompanyId(startData.session.companyId);
+        window.localStorage.setItem(COMPANY_STORAGE_KEY, startData.session.companyId);
       } catch {
         alert("Не удалось загрузить диагностику.");
       } finally {
@@ -110,6 +181,7 @@ export default function DiagnosisPage() {
     setIsSubmitting(true);
 
     try {
+      let resolvedSessionId = sessionId;
       let resolvedCompanyId = companyId ?? readStoredCompanyId();
 
       if (resolvedCompanyId && resolvedCompanyId !== companyId) {
@@ -150,32 +222,37 @@ export default function DiagnosisPage() {
         window.localStorage.setItem(COMPANY_STORAGE_KEY, dashboardData.company.id);
       }
 
+      if (!resolvedSessionId) {
+        const sessionResponse = await fetch("/api/diagnosis/start", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(
+            resolvedCompanyId
+              ? { companyId: resolvedCompanyId }
+              : {},
+          ),
+        });
+
+        const sessionData =
+          (await sessionResponse.json()) as DiagnosisStartResponse | { error?: string };
+
+        if (!sessionResponse.ok || !("session" in sessionData)) {
+          alert(
+            ("error" in sessionData && sessionData.error) ||
+              "Не удалось создать сессию диагностики.",
+          );
+          return;
+        }
+
+        resolvedSessionId = sessionData.session.id;
+        setSessionId(sessionData.session.id);
+      }
+
       if (!resolvedCompanyId) {
         alert("Компания не найдена. Вернитесь в онбординг.");
         router.push("/onboarding");
-        return;
-      }
-
-      const sessionResponse = await fetch("/api/diagnosis/start", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(
-          resolvedCompanyId
-            ? { companyId: resolvedCompanyId }
-            : {},
-        ),
-      });
-
-      const sessionData =
-        (await sessionResponse.json()) as DiagnosisStartResponse | { error?: string };
-
-      if (!sessionResponse.ok || !("session" in sessionData)) {
-        alert(
-          ("error" in sessionData && sessionData.error) ||
-            "Не удалось создать сессию диагностики.",
-        );
         return;
       }
 
@@ -185,11 +262,8 @@ export default function DiagnosisPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          sessionId: sessionData.session.id,
-          answers: questions.map((question) => ({
-            questionId: question.id,
-            value: answers[question.code],
-          })),
+          sessionId: resolvedSessionId,
+          answers: buildSubmitAnswers(questions, answers),
         }),
       });
 
@@ -201,6 +275,13 @@ export default function DiagnosisPage() {
           ("error" in submitData && submitData.error) ||
             "Не удалось сохранить ответы.",
         );
+        return;
+      }
+
+      setSessionId(submitData.session.id);
+
+      if (!isLastQuestion) {
+        setCurrentQuestionIndex((index) => index + 1);
         return;
       }
 

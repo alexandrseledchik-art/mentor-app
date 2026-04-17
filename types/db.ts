@@ -15,6 +15,7 @@ export interface Database {
           description: string | null;
           id: string;
           industry: string;
+          is_active: boolean;
           name: string;
           onboarding_completed: boolean;
           primary_goal: string | null;
@@ -28,6 +29,7 @@ export interface Database {
           description?: string | null;
           id?: string;
           industry: string;
+          is_active?: boolean;
           name: string;
           onboarding_completed?: boolean;
           primary_goal?: string | null;
@@ -41,6 +43,7 @@ export interface Database {
           description?: string | null;
           id?: string;
           industry?: string;
+          is_active?: boolean;
           name?: string;
           onboarding_completed?: boolean;
           primary_goal?: string | null;
@@ -53,7 +56,7 @@ export interface Database {
           {
             foreignKeyName: "companies_user_id_fkey";
             columns: ["user_id"];
-            isOneToOne: true;
+            isOneToOne: false;
             referencedRelation: "users";
             referencedColumns: ["id"];
           },
@@ -195,34 +198,52 @@ export interface Database {
       };
       diagnosis_sessions: {
         Row: {
+          answers: Json | null;
           company_id: string;
           completed_at: string | null;
           created_at: string;
+          current_step: number | null;
           id: string;
           question_set_id: string;
+          score_overall: number | null;
+          started_at: string | null;
           status: string;
           summary_key: string | null;
           total_score: number | null;
+          updated_at: string;
+          user_id: string | null;
         };
         Insert: {
+          answers?: Json | null;
           company_id: string;
           completed_at?: string | null;
           created_at?: string;
+          current_step?: number | null;
           id?: string;
           question_set_id: string;
+          score_overall?: number | null;
+          started_at?: string | null;
           status?: string;
           summary_key?: string | null;
           total_score?: number | null;
+          updated_at?: string;
+          user_id?: string | null;
         };
         Update: {
+          answers?: Json | null;
           company_id?: string;
           completed_at?: string | null;
           created_at?: string;
+          current_step?: number | null;
           id?: string;
           question_set_id?: string;
+          score_overall?: number | null;
+          started_at?: string | null;
           status?: string;
           summary_key?: string | null;
           total_score?: number | null;
+          updated_at?: string;
+          user_id?: string | null;
         };
         Relationships: [
           {
@@ -237,6 +258,77 @@ export interface Database {
             columns: ["question_set_id"];
             isOneToOne: false;
             referencedRelation: "diagnosis_question_sets";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "diagnosis_sessions_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      result_snapshots: {
+        Row: {
+          company_id: string;
+          created_at: string;
+          diagnosis_session_id: string;
+          dimension_scores: Json;
+          id: string;
+          overall_score: number | null;
+          recommended_tools: Json;
+          strongest_zones: Json;
+          summary: Json;
+          user_id: string;
+          weakest_zones: Json;
+        };
+        Insert: {
+          company_id: string;
+          created_at?: string;
+          diagnosis_session_id: string;
+          dimension_scores: Json;
+          id?: string;
+          overall_score?: number | null;
+          recommended_tools: Json;
+          strongest_zones: Json;
+          summary: Json;
+          user_id: string;
+          weakest_zones: Json;
+        };
+        Update: {
+          company_id?: string;
+          created_at?: string;
+          diagnosis_session_id?: string;
+          dimension_scores?: Json;
+          id?: string;
+          overall_score?: number | null;
+          recommended_tools?: Json;
+          strongest_zones?: Json;
+          summary?: Json;
+          user_id?: string;
+          weakest_zones?: Json;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "result_snapshots_company_id_fkey";
+            columns: ["company_id"];
+            isOneToOne: false;
+            referencedRelation: "companies";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "result_snapshots_diagnosis_session_id_fkey";
+            columns: ["diagnosis_session_id"];
+            isOneToOne: true;
+            referencedRelation: "diagnosis_sessions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "result_snapshots_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
             referencedColumns: ["id"];
           },
         ];
@@ -416,6 +508,68 @@ export interface Database {
           updated_at?: string;
         };
         Relationships: [];
+      };
+      workspaces: {
+        Row: {
+          active_company_id: string | null;
+          active_diagnosis_session_id: string | null;
+          created_at: string;
+          id: string;
+          last_completed_diagnosis_session_id: string | null;
+          last_visited_route: string | null;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          active_company_id?: string | null;
+          active_diagnosis_session_id?: string | null;
+          created_at?: string;
+          id?: string;
+          last_completed_diagnosis_session_id?: string | null;
+          last_visited_route?: string | null;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          active_company_id?: string | null;
+          active_diagnosis_session_id?: string | null;
+          created_at?: string;
+          id?: string;
+          last_completed_diagnosis_session_id?: string | null;
+          last_visited_route?: string | null;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "workspaces_active_company_id_fkey";
+            columns: ["active_company_id"];
+            isOneToOne: false;
+            referencedRelation: "companies";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "workspaces_active_diagnosis_session_id_fkey";
+            columns: ["active_diagnosis_session_id"];
+            isOneToOne: false;
+            referencedRelation: "diagnosis_sessions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "workspaces_last_completed_diagnosis_session_id_fkey";
+            columns: ["last_completed_diagnosis_session_id"];
+            isOneToOne: false;
+            referencedRelation: "diagnosis_sessions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "workspaces_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: true;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
       };
     };
     Views: Record<string, never>;

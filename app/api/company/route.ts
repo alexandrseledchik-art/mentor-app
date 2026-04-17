@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 
 import { SESSION_USER_COOKIE } from "@/lib/session";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
+import { getOrCreateWorkspace } from "@/lib/workspace/get-or-create-workspace";
+import { setActiveCompany } from "@/lib/workspace/set-active-company";
 import { companyPayloadSchema } from "@/validators/company";
 
 export async function POST(request: Request) {
@@ -20,6 +22,7 @@ export async function POST(request: Request) {
   const timestamp = Date.now();
   const email = `onboarding_${timestamp}@example.local`;
   const password = `TempPass123!${timestamp}`;
+  const telegramUserId = timestamp * 1000 + Math.floor(Math.random() * 1000);
 
   const { data: authData, error: userError } = await supabase.auth.admin.createUser({
     email,
@@ -40,16 +43,41 @@ export async function POST(request: Request) {
     );
   }
 
+  const { data: appUser, error: appUserError } = await supabase
+    .from("users")
+    .insert({
+      id: authUser.id,
+      telegram_user_id: telegramUserId,
+      telegram_username: null,
+      first_name: "User",
+      last_name: null,
+    })
+    .select("id")
+    .single();
+
+  if (appUserError || !appUser) {
+    console.error("APP USER ERROR FULL:", JSON.stringify(appUserError, null, 2));
+
+    return NextResponse.json(
+      {
+        error: appUserError?.message || "Ошибка создания профиля пользователя",
+        details: appUserError,
+      },
+      { status: 500 },
+    );
+  }
+
   const { data: company, error: companyError } = await supabase
     .from("companies")
     .insert({
-      user_id: authUser.id,
+      user_id: appUser.id,
       name,
       industry,
       team_size,
       revenue_range: monthly_revenue_range,
       primary_goal: goal,
       onboarding_completed: true,
+      is_active: true,
     })
     .select("id, name, industry, team_size, revenue_range, primary_goal")
     .single();
@@ -69,14 +97,21 @@ export async function POST(request: Request) {
   console.log("ONBOARDING USER CREATED:", authUser.id);
   console.log("ONBOARDING COMPANY CREATED:", {
     companyId: company.id,
-    companyUserId: authUser.id,
+    companyUserId: appUser.id,
+  });
+
+  await getOrCreateWorkspace(appUser.id);
+  await setActiveCompany({
+    userId: appUser.id,
+    companyId: company.id,
+    syncCompanyFlag: true,
   });
 
   const response = NextResponse.json({
     company,
   });
 
-  response.cookies.set(SESSION_USER_COOKIE, authUser.id, {
+  response.cookies.set(SESSION_USER_COOKIE, appUser.id, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
