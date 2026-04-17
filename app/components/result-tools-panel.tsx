@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import type {
@@ -14,6 +16,7 @@ type ResultToolsPanelProps = {
 };
 
 export function ResultToolsPanel({ toolsUrl, explainBaseUrl }: ResultToolsPanelProps) {
+  const pathname = usePathname();
   const [isLoadingTools, setIsLoadingTools] = useState(true);
   const [toolsError, setToolsError] = useState<string | null>(null);
   const [tools, setTools] = useState<ResultRecommendedToolItem[]>([]);
@@ -79,6 +82,11 @@ export function ResultToolsPanel({ toolsUrl, explainBaseUrl }: ResultToolsPanelP
     setExplanationError(null);
   }, [selectedTool?.slug]);
 
+  const buildToolHref = (slug: string) => {
+    const from = pathname && pathname.length > 0 ? pathname : "/tools";
+    return `/tools/${slug}?from=${encodeURIComponent(from)}`;
+  };
+
   return (
     <section>
       <h2>С чего начать</h2>
@@ -117,9 +125,9 @@ export function ResultToolsPanel({ toolsUrl, explainBaseUrl }: ResultToolsPanelP
                   >
                     {isSelected ? "Выбран" : "Выбрать"}
                   </button>
-                  <a href={`/tools/${tool.slug}`} className="button-link button-link-secondary">
+                  <Link href={buildToolHref(tool.slug)} className="button-link button-link-secondary">
                     Открыть инструмент
-                  </a>
+                  </Link>
                 </div>
               </article>
             );
@@ -140,9 +148,9 @@ export function ResultToolsPanel({ toolsUrl, explainBaseUrl }: ResultToolsPanelP
               >
                 {isLoadingExplanation ? "Разбираем..." : "Почему этот инструмент"}
               </button>
-              <a href={`/tools/${selectedTool.slug}`} className="button-link">
+              <Link href={buildToolHref(selectedTool.slug)} className="button-link">
                 Открыть инструмент
-              </a>
+              </Link>
             </div>
           </section>
 

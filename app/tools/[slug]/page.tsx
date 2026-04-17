@@ -5,6 +5,41 @@ import { getToolBySlug } from "@/lib/tools";
 
 export const dynamic = "force-dynamic";
 
+function getBackLinkMeta(from: string | undefined) {
+  if (!from || !from.startsWith("/")) {
+    return {
+      href: "/tools",
+      label: "Назад к библиотеке",
+    };
+  }
+
+  if (from === "/dashboard") {
+    return {
+      href: from,
+      label: "Назад в dashboard",
+    };
+  }
+
+  if (from.startsWith("/results/")) {
+    return {
+      href: from,
+      label: "Назад к результату",
+    };
+  }
+
+  if (from.startsWith("/diagnosis/")) {
+    return {
+      href: from,
+      label: "Назад к результату",
+    };
+  }
+
+  return {
+    href: from,
+    label: "Назад",
+  };
+}
+
 function renderContent(content: Record<string, unknown>) {
   const sections = Array.isArray(content.sections) ? content.sections : [];
   const items = Array.isArray(content.items) ? content.items : [];
@@ -95,9 +130,17 @@ function renderContent(content: Record<string, unknown>) {
   );
 }
 
-export default async function ToolDetailsPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function ToolDetailsPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ from?: string }>;
+}) {
   const { slug } = await params;
+  const { from } = await searchParams;
   const tool = await getToolBySlug(slug);
+  const backLink = getBackLinkMeta(from);
 
   if (!tool) {
     notFound();
@@ -127,8 +170,11 @@ export default async function ToolDetailsPage({ params }: { params: Promise<{ sl
         {renderContent(tool.content)}
 
         <div className="action-row">
-          <Link href="/tools" className="button-link button-link-secondary">
-            Назад к библиотеке
+          <Link href={backLink.href} className="button-link button-link-secondary">
+            {backLink.label}
+          </Link>
+          <Link href="/tools" className="button-link">
+            К библиотеке
           </Link>
         </div>
       </section>

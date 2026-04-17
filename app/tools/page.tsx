@@ -17,6 +17,12 @@ export default async function ToolsPage() {
           Библиотека инструментов, которые помогают разбирать слабые зоны бизнеса.
         </p>
 
+        <div className="action-row">
+          <Link href="/dashboard" className="button-link button-link-secondary">
+            Назад в dashboard
+          </Link>
+        </div>
+
         <div className="tool-stack">
           {tools.map((tool) => (
             <article key={tool.id} className="tool-card">
@@ -30,7 +36,7 @@ export default async function ToolsPage() {
                 {tool.format ? <span>{tool.format}</span> : null}
                 {tool.estimatedMinutes ? <span>{tool.estimatedMinutes} мин</span> : null}
               </div>
-              <Link href={`/tools/${tool.slug}`} className="button-link">
+              <Link href={`/tools/${tool.slug}?from=/tools`} className="button-link">
                 Открыть
               </Link>
             </article>
