@@ -391,13 +391,21 @@ async function buildScenarioFollowUpFromCanonical(params: {
   }
 
   const primary = result.hybridRecommendation.primaryRecommendation;
+  const expansion = result.hybridRecommendation.optionalExpansions[0] ?? null;
   const details = primary.details ?? {};
   const goal = details.goal ?? "разобрать ключевое ограничение";
   const outcome = details.result ?? "понятный следующий шаг";
   const nextStep = details.nextStepGoal ?? params.context.summary.first_steps[1] ?? "закрепить следующий шаг";
+  const bridgeGoal = expansion?.details?.goal ?? null;
+  const bridgeOutcome = expansion?.details?.result ?? null;
+  const bridgeText = expansion
+    ? ` Перед этим сделайте ${expansion.title}${
+        bridgeGoal ? `: ${bridgeGoal}` : ""
+      }${bridgeOutcome ? `. На выходе — ${bridgeOutcome}` : ""}.`
+    : "";
 
   return {
-    reply: `${result.hybridRecommendation.reasoning.canonicalReason} Первый рабочий шаг — ${primary.title}: цель — ${goal}, на выходе — ${outcome}. Следующий шаг: ${nextStep}.`,
+    reply: `${result.hybridRecommendation.reasoning.canonicalReason} Основной шаг — ${primary.title}: цель — ${goal}, на выходе — ${outcome}.${bridgeText} Следующий шаг: ${nextStep}.`,
     mode: params.mode,
     step: 2,
     quickReplies: [],

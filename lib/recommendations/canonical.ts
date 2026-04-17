@@ -1,5 +1,3 @@
-import "server-only";
-
 import { classifyHeuristicBundle } from "./bundles";
 
 import type {

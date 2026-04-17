@@ -1,5 +1,3 @@
-import "server-only";
-
 import { classifyHeuristicBundle } from "./bundles";
 import { resolveCanonicalRecommendation } from "./canonical";
 import { composeHybridRecommendation } from "./compose";
@@ -21,10 +19,16 @@ function logRecommendationEvent(event: string, payload: Record<string, unknown>)
 
 export async function buildHybridRecommendation(
   ctx: RecommendationContext,
+  deps?: {
+    getSource?: typeof getBusinessArchitectureSource;
+    logEvent?: typeof logRecommendationEvent;
+  },
 ): Promise<OrchestratedRecommendationResult> {
+  const getSource = deps?.getSource ?? getBusinessArchitectureSource;
+  const logEvent = deps?.logEvent ?? logRecommendationEvent;
   const bundleInfo = classifyHeuristicBundle(ctx);
 
-  logRecommendationEvent("hybrid_rec_input", {
+  logEvent("hybrid_rec_input", {
     mode: ctx.mode,
     selectedPath: ctx.selectedPath,
     scores: ctx.scores,
@@ -37,12 +41,12 @@ export async function buildHybridRecommendation(
   });
 
   try {
-    const source = await getBusinessArchitectureSource();
+    const source = await getSource();
     const canonicalResolution = resolveCanonicalRecommendation({ source, ctx });
     const canonical = canonicalResolution.recommendation;
 
     if (!canonical) {
-      logRecommendationEvent("canonical_resolution_failed", {
+      logEvent("canonical_resolution_failed", {
         mode: ctx.mode,
         selectedPath: ctx.selectedPath,
         bundle: canonicalResolution.trace.bundle,
@@ -59,7 +63,7 @@ export async function buildHybridRecommendation(
       };
     }
 
-    logRecommendationEvent("hybrid_rec_canonical", {
+    logEvent("hybrid_rec_canonical", {
       mode: ctx.mode,
       selectedPath: ctx.selectedPath,
       bundle: canonicalResolution.trace.bundle,
@@ -72,8 +76,12 @@ export async function buildHybridRecommendation(
       details: canonical.details ?? null,
     });
 
-    const policy = evaluateExpansionPolicy(ctx, canonical);
-    logRecommendationEvent("hybrid_rec_policy", {
+    const policy = evaluateExpansionPolicy({
+      ctx,
+      canonical,
+      source,
+    });
+    logEvent("hybrid_rec_policy", {
       mode: ctx.mode,
       selectedPath: ctx.selectedPath,
       bundle: canonicalResolution.trace.bundle,
@@ -83,7 +91,24 @@ export async function buildHybridRecommendation(
     const expansions = resolveInferredExpansions({
       ctx,
       canonical,
+      source,
       policy,
+    });
+
+    logEvent("hybrid_rec_expansion", {
+      mode: ctx.mode,
+      selectedPath: ctx.selectedPath,
+      bundle: canonicalResolution.trace.bundle,
+      included: expansions.length > 0,
+      expansionCount: expansions.length,
+      expansions: expansions.map((item) => ({
+        origin: item.origin,
+        kind: item.kind,
+        title: item.title,
+        canonicalRef: item.canonicalRef ?? null,
+      })),
+      policyReasonCode: policy[0]?.reasonCode ?? null,
+      policyReason: policy[0]?.humanReadableReason ?? null,
     });
 
     const hybridRecommendation = composeHybridRecommendation({
@@ -93,7 +118,7 @@ export async function buildHybridRecommendation(
       policy,
     });
 
-    logRecommendationEvent("hybrid_rec_composition", {
+    logEvent("hybrid_rec_composition", {
       mode: ctx.mode,
       selectedPath: ctx.selectedPath,
       bundle: canonicalResolution.trace.bundle,
@@ -109,7 +134,7 @@ export async function buildHybridRecommendation(
       trace: canonicalResolution.trace,
     };
   } catch (error) {
-    logRecommendationEvent("canonical_resolution_failed", {
+    logEvent("canonical_resolution_failed", {
       mode: ctx.mode,
       selectedPath: ctx.selectedPath,
       bundle: bundleInfo.bundle,

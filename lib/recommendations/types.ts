@@ -1,5 +1,3 @@
-import "server-only";
-
 import type { DiagnosisChatContext, DiagnosisChatMode } from "@/types/domain";
 
 export type RecommendationOrigin = "canonical" | "inferred";
@@ -64,7 +62,14 @@ export interface RecommendationItem {
 export interface ExpansionPolicyDecision {
   checked: boolean;
   included: boolean;
-  reason: string;
+  reasonCode:
+    | "no_preparatory_step"
+    | "duplicates_canonical"
+    | "canonical_already_specific"
+    | "cross_domain_bridge"
+    | "canonical_too_large"
+    | "preparatory_step_available";
+  humanReadableReason: string;
 }
 
 export interface RecommendationReasoning {

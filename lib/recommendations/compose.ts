@@ -1,5 +1,3 @@
-import "server-only";
-
 import type {
   ExpansionPolicyDecision,
   HybridRecommendation,
@@ -18,8 +16,7 @@ export function composeHybridRecommendation(params: {
     optionalExpansions: params.expansions,
     reasoning: {
       canonicalReason: params.canonicalReason,
-      expansionReasonSummary:
-        params.expansions.length > 0 ? "Expansion included." : null,
+      expansionReasonSummary: params.expansions[0]?.explanation.why ?? null,
     },
     expansionPolicy: params.policy,
   };
