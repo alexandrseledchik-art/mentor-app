@@ -33,6 +33,58 @@ const PATH_KEYWORDS: Record<string, string[]> = {
   cadence: ["ритм", "встреч", "управлен", "kpi"],
 };
 
+const TOOL_TITLE_ALIASES: Record<string, string[]> = {
+  "аудит системы продаж": [
+    "аудит продаж",
+    "воронка продаж",
+    "система планирования продаж",
+  ],
+  "матрица полномочий": [
+    "матрица полномочия",
+    "матрица полномочия",
+    "decision matrix",
+  ],
+  "pestel + анализ конкурентов": [
+    "pestel",
+    "porter",
+    "анализ конкурентов",
+  ],
+  "cjm + nps": [
+    "customer journey map",
+    "cjm",
+    "nps",
+  ],
+  "диагностика оргструктуры + raci": [
+    "raci",
+    "матрица ролей и ответственности",
+    "организационная структура",
+  ],
+  "аудит роли собственника": [
+    "owner context canvas",
+    "карта контекста собственника",
+    "канва контекста собственника",
+    "decision matrix для собственников",
+    "financial mandate",
+    "финансовый мандат собственников",
+  ],
+  "okr / kpi": [
+    "okr",
+    "objectives and key results",
+    "kpi",
+  ],
+  "ansoff / blue ocean": [
+    "ansoff",
+    "blue ocean",
+    "матрица ансоффа",
+    "стратегия голубого океана",
+  ],
+  "stp + tier-сегментация клиентов": [
+    "tier",
+    "сегментация",
+    "stp",
+  ],
+};
+
 function normalize(value: string | null | undefined) {
   return (value ?? "")
     .toLowerCase()
@@ -46,6 +98,83 @@ function hasKeyword(value: string | null | undefined, keywords: string[]) {
   return keywords.some((keyword) => normalized.includes(normalize(keyword)));
 }
 
+function getToolTitleCandidates(value: string | null | undefined) {
+  const normalized = normalize(value);
+
+  if (!normalized) {
+    return [];
+  }
+
+  const splitParts = normalized
+    .split(/[+,/]/)
+    .map((part) => part.trim())
+    .filter((part) => part.length >= 3);
+
+  return Array.from(
+    new Set([
+      normalized,
+      ...splitParts,
+      ...(TOOL_TITLE_ALIASES[normalized] ?? []),
+    ]),
+  );
+}
+
+function findBestToolMatch(params: {
+  source: BusinessArchitectureSource;
+  title: string;
+}) {
+  const candidates = getToolTitleCandidates(params.title);
+
+  if (candidates.length === 0) {
+    return null;
+  }
+
+  const exact = params.source.knowledge.tools.find((item) =>
+    candidates.some((candidate) => normalize(item.title_ru) === normalize(candidate)),
+  );
+
+  if (exact) {
+    return exact;
+  }
+
+  let bestMatch:
+    | {
+        tool: BusinessArchitectureSource["knowledge"]["tools"][number];
+        score: number;
+      }
+    | null = null;
+
+  for (const tool of params.source.knowledge.tools) {
+    const toolTitle = normalize(tool.title_ru);
+    let score = 0;
+
+    for (const candidate of candidates) {
+      const normalizedCandidate = normalize(candidate);
+
+      if (!normalizedCandidate) {
+        continue;
+      }
+
+      if (toolTitle.includes(normalizedCandidate) || normalizedCandidate.includes(toolTitle)) {
+        score = Math.max(score, normalizedCandidate.length);
+      } else if (
+        normalizedCandidate.length >= 4 &&
+        normalizedCandidate
+          .split(/\s+/)
+          .every((token) => token.length < 3 || toolTitle.includes(token))
+      ) {
+        score = Math.max(score, Math.floor(normalizedCandidate.length * 0.75));
+      }
+    }
+
+    if (!bestMatch || score > bestMatch.score) {
+      bestMatch = score > 0 ? { tool, score } : bestMatch;
+    }
+  }
+
+  return bestMatch?.tool ?? null;
+}
+
 function createToolRecommendation(params: {
   source: BusinessArchitectureSource;
   toolTitle: string;
@@ -55,17 +184,10 @@ function createToolRecommendation(params: {
   confidence: ToolHandoff["confidence"];
   ctx: RecommendationContext;
 }): ToolHandoff | null {
-  const exactTool = params.source.knowledge.tools.find(
-    (item) => normalize(item.title_ru) === normalize(params.toolTitle),
-  );
-  const keywordTool =
-    exactTool ??
-    params.source.knowledge.tools.find(
-      (item) =>
-        normalize(item.title_ru).includes(normalize(params.toolTitle)) ||
-        normalize(params.toolTitle).includes(normalize(item.title_ru)),
-    );
-  const tool = keywordTool;
+  const tool = findBestToolMatch({
+    source: params.source,
+    title: params.toolTitle,
+  });
 
   if (!tool) {
     return null;
@@ -133,9 +255,10 @@ function resolveRouteLinkedTool(params: {
   canonical: RecommendationItem;
   ctx: RecommendationContext;
 }): ToolHandoff | null {
-  const exactTool = params.source.knowledge.tools.find(
-    (item) => normalize(item.title_ru) === normalize(params.canonical.title),
-  );
+  const exactTool = findBestToolMatch({
+    source: params.source,
+    title: params.canonical.title,
+  });
 
   if (exactTool) {
     const duplicate = isDuplicateOfCanonicalTitle({
@@ -161,39 +284,7 @@ function resolveRouteLinkedTool(params: {
     }
   }
 
-  const keywordTool = params.source.knowledge.tools.find(
-    (item) =>
-      normalize(item.title_ru).includes(normalize(params.canonical.title)) ||
-      normalize(params.canonical.title).includes(normalize(item.title_ru)),
-  );
-
-  if (!keywordTool) {
-    return null;
-  }
-
-  const duplicate = isDuplicateOfCanonicalTitle({
-    canonicalTitle: params.canonical.title,
-    toolTitle: keywordTool.title_ru,
-  });
-  const usefulLayer = hasUsefulToolLayer({
-    description: keywordTool.description_ru,
-    whenToApply: keywordTool.when_to_apply_ru,
-    result: keywordTool.result_ru,
-  });
-
-  if (duplicate && !usefulLayer) {
-    return null;
-  }
-
-  return createToolRecommendation({
-    source: params.source,
-    toolTitle: keywordTool.title_ru,
-    reasonCode: "route_tool_keyword_match",
-    sourceType: "route_linked",
-    confidence: "medium",
-    reason: `Tool handoff added because canonical step «${params.canonical.title}» has a keyword-level match in the catalog.`,
-    ctx: params.ctx,
-  });
+  return null;
 }
 
 function resolveSymptomLinkedTool(params: {
@@ -216,9 +307,20 @@ function resolveSymptomLinkedTool(params: {
     return null;
   }
 
+  const recommendedToolCandidates = getToolTitleCandidates(symptomMatch.recommended_tool_ru);
+  const resolvedTitle =
+    recommendedToolCandidates.find((candidate) =>
+      Boolean(
+        findBestToolMatch({
+          source: params.source,
+          title: candidate,
+        }),
+      ),
+    ) ?? symptomMatch.recommended_tool_ru;
+
   return createToolRecommendation({
     source: params.source,
-    toolTitle: symptomMatch.recommended_tool_ru.split("+")[0]?.trim() ?? symptomMatch.recommended_tool_ru,
+    toolTitle: resolvedTitle,
     reasonCode: "symptom_tool_match",
     sourceType: "symptom_linked",
     confidence: "medium",

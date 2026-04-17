@@ -11,6 +11,7 @@ import type {
   DiagnosisAiSummary,
   DiagnosisSummaryContext,
   DiagnosisSession,
+  ResultRecommendedTool,
   RecommendedTool,
   Tool,
   ToolCategory,
@@ -78,6 +79,7 @@ export interface DiagnosisResultResponse {
   dimensionScores: DiagnosisDimensionScore[];
   summary: DiagnosisResultSummary;
   tools: RecommendedTool[];
+  resultRecommendedTools: ResultRecommendedTool[];
   summaryContext: DiagnosisSummaryContext;
   aiSummary: DiagnosisAiSummary | null;
 }

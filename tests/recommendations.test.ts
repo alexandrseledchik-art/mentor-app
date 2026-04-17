@@ -561,6 +561,35 @@ test("phase 2B: route-linked tool handoff is included for direct tool match", as
   assert.equal(result.hybridRecommendation?.toolHandoff?.reasonCode, "route_tool_exact_match");
 });
 
+test("phase 2B: route-linked tool handoff matches realistic alias titles from knowledge catalog", async () => {
+  const source = createSource();
+  const salesAuditTool = source.knowledge.tools.find(
+    (item) => item.id === "tool-sales-audit",
+  );
+
+  if (!salesAuditTool) {
+    throw new Error("Fixture tool not found");
+  }
+
+  salesAuditTool.title_ru = "Воронка продаж";
+
+  const result = await buildHybridRecommendation(
+    createContext({
+      mode: "growth",
+      selectedPath: "sales",
+      scores: { sales: 1, product: 1, owner: 4 },
+      mainFocus: "Сначала выровняйте продажи.",
+    }),
+    {
+      getSource: async () => source,
+      logEvent: () => undefined,
+    },
+  );
+
+  assert.equal(result.hybridRecommendation?.toolHandoff?.source, "route_linked");
+  assert.equal(result.hybridRecommendation?.toolHandoff?.tool.title, "Воронка продаж");
+});
+
 test("phase 2B: symptom-linked tool handoff is included when route-linked tool is unavailable", async () => {
   const source = createSource();
   source.product.route_steps[0]!.tool_ru = "Внешний рыночный разбор";
@@ -580,6 +609,36 @@ test("phase 2B: symptom-linked tool handoff is included when route-linked tool i
 
   assert.equal(result.hybridRecommendation?.toolHandoff?.source, "symptom_linked");
   assert.equal(result.hybridRecommendation?.toolHandoff?.reasonCode, "symptom_tool_match");
+});
+
+test("phase 2B: symptom-linked tool handoff resolves combined recommended tool strings", async () => {
+  const source = createSource();
+  source.product.route_steps[0]!.tool_ru = "Внешний рыночный разбор";
+  const pestelTool = source.knowledge.tools.find((item) => item.id === "tool-pestel");
+
+  if (!pestelTool) {
+    throw new Error("Fixture tool not found");
+  }
+
+  pestelTool.title_ru = "PESTEL-анализ внешней среды";
+  source.knowledge.symptom_tool_map[0]!.recommended_tool_ru =
+    "PESTEL + Porter's Five Forces + Анализ конкурентов";
+
+  const result = await buildHybridRecommendation(
+    createContext({
+      mode: "risk",
+      selectedPath: "growth_slowdown",
+      scores: { strategy: 1, market: 1, owner: 4 },
+      mainFocus: "Сначала соберите стратегический фокус.",
+    }),
+    {
+      getSource: async () => source,
+      logEvent: () => undefined,
+    },
+  );
+
+  assert.equal(result.hybridRecommendation?.toolHandoff?.source, "symptom_linked");
+  assert.equal(result.hybridRecommendation?.toolHandoff?.tool.title, "PESTEL-анализ внешней среды");
 });
 
 test("phase 2B: no handoff is returned when no confident match exists", async () => {

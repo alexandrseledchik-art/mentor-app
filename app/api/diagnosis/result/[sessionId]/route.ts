@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+import { classifyHeuristicBundle } from "@/lib/recommendations/bundles";
+import { buildHybridRecommendation } from "@/lib/recommendations/orchestrate";
 import {
   buildDiagnosisSummary,
   calculateDimensionScores,
@@ -12,9 +14,11 @@ import type { Database } from "@/types/db";
 import type {
   DiagnosisAnswerInput,
   Company,
+  DiagnosisAiSummary,
   DiagnosisQuestion,
   DiagnosisQuestionSet,
   RecommendedTool,
+  ResultRecommendedTool,
   DiagnosisSummaryContext,
   DiagnosisSession,
 } from "@/types/domain";
@@ -288,6 +292,205 @@ function buildSummaryContext(params: {
   };
 }
 
+function buildScores(dimensionScores: Array<{ dimension: string; averageScore: number }>) {
+  const scoreByDimension = new Map(dimensionScores.map((item) => [item.dimension, item.averageScore]));
+
+  return {
+    owner: scoreByDimension.get("owner") ?? null,
+    market: scoreByDimension.get("external_environment") ?? null,
+    strategy: scoreByDimension.get("strategy") ?? null,
+    product: scoreByDimension.get("product") ?? null,
+    sales: scoreByDimension.get("commercial") ?? null,
+    operations: scoreByDimension.get("operations") ?? null,
+    finance: scoreByDimension.get("finance") ?? null,
+    team: scoreByDimension.get("team") ?? null,
+    management: scoreByDimension.get("governance") ?? null,
+    tech: scoreByDimension.get("technology") ?? null,
+    data: scoreByDimension.get("data") ?? null,
+  };
+}
+
+function buildFallbackChatSummary(params: {
+  summary: DiagnosisResultResponse["summary"];
+  summaryContext: DiagnosisSummaryContext;
+  dimensionScores: Array<{ dimension: string; averageScore: number }>;
+}) {
+  const sortedScores = params.dimensionScores.slice().sort((a, b) => a.averageScore - b.averageScore);
+  const weakestLabel =
+    dimensionLabelMap[sortedScores[0]?.dimension ?? ""] ?? "ключевой контур управления";
+  const strongestLabels = params.summaryContext.strongestDomains
+    .slice(0, 2)
+    .map((item) => dimensionLabelMap[item] ?? item);
+  const whyNowBase =
+    params.summary.risks.length >= 3
+      ? params.summary.risks.slice(0, 3)
+      : [
+          `${weakestLabel} сейчас тянет управление назад → решения становятся медленнее и дороже.`,
+          `Пока этот контур не выровнен → рост остаётся менее предсказуемым.`,
+          `Если оставить всё как есть → команда и собственник будут продолжать тушить последствия вручную.`,
+        ];
+
+  return {
+    mainSummary: `${params.summary.title}. ${params.summary.description}`,
+    mainFocus: `Сначала выровняйте контур «${weakestLabel}».`,
+    whyNow: whyNowBase,
+    strengths:
+      strongestLabels.length >= 2
+        ? strongestLabels.map(
+            (item) => `${item} уже дают опору, поэтому изменения можно проводить быстрее.`,
+          )
+        : [
+            "В бизнесе уже есть рабочие элементы системы, поэтому изменения не нужно начинать с нуля.",
+            "Даже частичная управляемость даёт опору, а значит быстрые улучшения уже реалистичны.",
+          ],
+    firstSteps: [
+      `Сегодня зафиксируйте, где именно контур «${weakestLabel}» сильнее всего тормозит решения.`,
+      "Назначьте одного владельца за разбор проблемы и срок первого результата.",
+      "Через короткий цикл проверьте эффект и закрепите новый управленческий ритм.",
+    ],
+  };
+}
+
+function buildRecommendationContext(params: {
+  company: Company | null;
+  dimensionScores: Array<{ dimension: string; averageScore: number }>;
+  summary: DiagnosisResultResponse["summary"];
+  summaryContext: DiagnosisSummaryContext;
+  aiSummary: DiagnosisAiSummary | null;
+}) {
+  const summary = params.aiSummary ?? buildFallbackChatSummary({
+    summary: params.summary,
+    summaryContext: params.summaryContext,
+    dimensionScores: params.dimensionScores,
+  });
+
+  return {
+    company: params.company
+      ? {
+          name: params.company.name,
+          industry: params.company.industry,
+          teamSize: params.company.teamSize,
+          revenue: params.company.revenueRange,
+          goal: params.company.primaryGoal,
+        }
+      : null,
+    scores: buildScores(params.dimensionScores),
+    summary: {
+      main_summary: summary.mainSummary,
+      main_focus: summary.mainFocus,
+      why_now: summary.whyNow,
+      strengths: summary.strengths,
+      first_steps: summary.firstSteps,
+    },
+  };
+}
+
+function getResultScenarioCandidates(bundle: ReturnType<typeof classifyHeuristicBundle>["bundle"]) {
+  const candidatesByBundle = {
+    owner_governance: [
+      { mode: "risk", selectedPath: "owner_overload" },
+      { mode: "start", selectedPath: "decisions" },
+      { mode: "growth", selectedPath: "decisions" },
+    ],
+    commercial_product: [
+      { mode: "growth", selectedPath: "sales" },
+      { mode: "growth", selectedPath: "product" },
+      { mode: "risk", selectedPath: "growth_slowdown" },
+    ],
+    operations_governance: [
+      { mode: "risk", selectedPath: "loss_of_control" },
+      { mode: "start", selectedPath: "cadence" },
+      { mode: "growth", selectedPath: "decisions" },
+    ],
+    strategy_market: [
+      { mode: "start", selectedPath: "strategy" },
+      { mode: "risk", selectedPath: "growth_slowdown" },
+      { mode: "growth", selectedPath: "product" },
+    ],
+    mixed: [
+      { mode: "growth", selectedPath: "sales" },
+      { mode: "risk", selectedPath: "loss_of_control" },
+      { mode: "start", selectedPath: "strategy" },
+    ],
+  } as const;
+
+  return candidatesByBundle[bundle];
+}
+
+async function loadResultRecommendedTools(params: {
+  company: Company | null;
+  dimensionScores: Array<{ dimension: string; averageScore: number }>;
+  summary: DiagnosisResultResponse["summary"];
+  summaryContext: DiagnosisSummaryContext;
+  aiSummary: DiagnosisAiSummary | null;
+  fallbackTools: RecommendedTool[];
+}) {
+  const recommendationContext = buildRecommendationContext({
+    company: params.company,
+    dimensionScores: params.dimensionScores,
+    summary: params.summary,
+    summaryContext: params.summaryContext,
+    aiSummary: params.aiSummary,
+  });
+  const bundle = classifyHeuristicBundle({
+    ...recommendationContext,
+    mode: "growth",
+    selectedPath: "sales",
+  }).bundle;
+  const candidates = getResultScenarioCandidates(bundle);
+
+  const results = await Promise.all(
+    candidates.map((candidate) =>
+      buildHybridRecommendation({
+        ...recommendationContext,
+        mode: candidate.mode,
+        selectedPath: candidate.selectedPath,
+      }),
+    ),
+  );
+
+  const personalizedTools: ResultRecommendedTool[] = [];
+
+  for (const result of results) {
+    const handoff = result.hybridRecommendation?.toolHandoff ?? null;
+    const toolContext = handoff?.toolContext ?? null;
+
+    if (!handoff || !toolContext) {
+      continue;
+    }
+
+    if (
+      personalizedTools.some(
+        (item) => item.title.trim().toLowerCase() === handoff.tool.title.trim().toLowerCase(),
+      )
+    ) {
+      continue;
+    }
+
+    personalizedTools.push({
+      title: handoff.tool.title,
+      whyNow: toolContext.whyThisToolNow,
+      whatItClarifies: toolContext.whatItClarifies,
+      source: "hybrid",
+    });
+
+    if (personalizedTools.length === 3) {
+      break;
+    }
+  }
+
+  if (personalizedTools.length > 0) {
+    return personalizedTools;
+  }
+
+  return params.fallbackTools.slice(0, 3).map((tool) => ({
+    title: tool.title,
+    whyNow: tool.whyRecommended,
+    whatItClarifies: tool.summary,
+    source: "deterministic" as const,
+  }));
+}
+
 export async function GET(
   _request: Request,
   context: { params: Promise<{ sessionId: string }> },
@@ -361,6 +564,14 @@ export async function GET(
     company: mappedCompany,
   });
   const aiSummary = await generateDiagnosisAiSummary(summaryContext, dimensionScores);
+  const resultRecommendedTools = await loadResultRecommendedTools({
+    company: mappedCompany,
+    dimensionScores,
+    summary,
+    summaryContext,
+    aiSummary,
+    fallbackTools: recommendedTools,
+  });
   const payload: DiagnosisResultResponse = {
     questionSet: mapQuestionSet(questionSet),
     questions: mappedQuestions,
@@ -369,6 +580,7 @@ export async function GET(
     dimensionScores,
     summary,
     tools: recommendedTools,
+    resultRecommendedTools,
     summaryContext,
     aiSummary,
   };

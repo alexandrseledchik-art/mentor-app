@@ -148,6 +148,13 @@ export interface RecommendedTool {
   externalUrl: string;
 }
 
+export interface ResultRecommendedTool {
+  title: string;
+  whyNow: string;
+  whatItClarifies: string;
+  source: "hybrid" | "deterministic";
+}
+
 export interface DiagnosisSummaryContext {
   weakestDomains: string[];
   strongestDomains: string[];

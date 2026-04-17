@@ -104,6 +104,13 @@ export const diagnosisRecommendedToolSchema = z.object({
   externalUrl: z.string().min(1),
 });
 
+export const diagnosisResultRecommendedToolSchema = z.object({
+  title: z.string().min(1),
+  whyNow: z.string().min(1),
+  whatItClarifies: z.string().min(1),
+  source: z.enum(["hybrid", "deterministic"]),
+});
+
 export const diagnosisSummaryContextSchema = z.object({
   weakestDomains: z.array(z.string().min(1)),
   strongestDomains: z.array(z.string().min(1)),
@@ -200,6 +207,7 @@ export const diagnosisResultResponseSchema = z.object({
   dimensionScores: z.array(diagnosisDimensionScoreSchema),
   summary: diagnosisResultSummarySchema,
   tools: z.array(diagnosisRecommendedToolSchema).max(5),
+  resultRecommendedTools: z.array(diagnosisResultRecommendedToolSchema).max(3),
   summaryContext: diagnosisSummaryContextSchema,
   aiSummary: diagnosisAiSummarySchema.nullable(),
 });

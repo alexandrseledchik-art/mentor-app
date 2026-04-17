@@ -147,7 +147,7 @@ export default async function DiagnosisResultPage({
             </ul>
           </section>
 
-          <ResultTools tools={data.tools} />
+          <ResultTools tools={data.resultRecommendedTools} />
 
           <section>
             <div className="action-row">
