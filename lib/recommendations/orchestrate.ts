@@ -3,6 +3,8 @@ import { resolveCanonicalRecommendation } from "./canonical";
 import { composeHybridRecommendation } from "./compose";
 import { evaluateExpansionPolicy, resolveInferredExpansions } from "./expansion";
 import { getBusinessArchitectureSource } from "./json-source";
+import { buildToolContext } from "./tool-context";
+import { resolveToolHandoff } from "./tool-handoff";
 
 import type {
   OrchestratedRecommendationResult,
@@ -111,10 +113,60 @@ export async function buildHybridRecommendation(
       policyReason: policy[0]?.humanReadableReason ?? null,
     });
 
+    const toolHandoff = resolveToolHandoff({
+      source,
+      canonical,
+      ctx,
+    });
+
+    const toolContextResult = buildToolContext({
+      ctx,
+      handoff: toolHandoff,
+    });
+
+    const enrichedToolHandoff = toolHandoff
+      ? {
+          ...toolHandoff,
+          toolContext: toolContextResult.toolContext,
+          enrichmentMeta: toolContextResult.meta,
+        }
+      : null;
+
+    logEvent("hybrid_rec_tool_handoff", {
+      mode: ctx.mode,
+      selectedPath: ctx.selectedPath,
+      bundle: canonicalResolution.trace.bundle,
+      included: Boolean(enrichedToolHandoff),
+      source: enrichedToolHandoff?.source ?? null,
+      reasonCode: enrichedToolHandoff?.reasonCode ?? "no_confident_tool_match",
+      reason: enrichedToolHandoff?.humanReadableReason ?? "No confident tool handoff match.",
+      tool: enrichedToolHandoff
+        ? {
+            title: enrichedToolHandoff.tool.title,
+            canonicalRef: enrichedToolHandoff.tool.canonicalRef ?? null,
+          }
+        : null,
+    });
+
+    logEvent("tool_context_enrichment", {
+      mode: ctx.mode,
+      selectedPath: ctx.selectedPath,
+      bundle: canonicalResolution.trace.bundle,
+      included: toolContextResult.meta.included,
+      toolTitle: enrichedToolHandoff?.tool.title ?? null,
+      reasonCode: toolContextResult.meta.reasonCode,
+      reason: toolContextResult.meta.humanReadableReason,
+      usedDescription: toolContextResult.meta.usedDescription,
+      usedWhenToApply: toolContextResult.meta.usedWhenToApply,
+      usedResult: toolContextResult.meta.usedResult,
+      usedBundleTemplate: toolContextResult.meta.usedBundleTemplate,
+    });
+
     const hybridRecommendation = composeHybridRecommendation({
       canonical,
       canonicalReason: canonical.explanation.why,
       expansions,
+      toolHandoff: enrichedToolHandoff,
       policy,
     });
 

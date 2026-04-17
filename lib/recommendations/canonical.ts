@@ -315,7 +315,7 @@ const CANONICAL_QUERY_MAP: Record<
   },
 };
 
-function includesKeyword(value: string | undefined, keywords: string[]) {
+function includesKeyword(value: string | null | undefined, keywords: string[]) {
   const normalized = (value ?? "").toLowerCase();
   return keywords.some((keyword) => normalized.includes(keyword.toLowerCase()));
 }

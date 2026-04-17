@@ -392,6 +392,7 @@ async function buildScenarioFollowUpFromCanonical(params: {
 
   const primary = result.hybridRecommendation.primaryRecommendation;
   const expansion = result.hybridRecommendation.optionalExpansions[0] ?? null;
+  const toolHandoff = result.hybridRecommendation.toolHandoff ?? null;
   const details = primary.details ?? {};
   const goal = details.goal ?? "разобрать ключевое ограничение";
   const outcome = details.result ?? "понятный следующий шаг";
@@ -403,9 +404,18 @@ async function buildScenarioFollowUpFromCanonical(params: {
         bridgeGoal ? `: ${bridgeGoal}` : ""
       }${bridgeOutcome ? `. На выходе — ${bridgeOutcome}` : ""}.`
     : "";
+  const handoffText = toolHandoff
+    ? ` Если нужен один конкретный инструмент, возьмите ${toolHandoff.tool.title}${
+        toolHandoff.tool.details?.result ? ` — на выходе получите ${toolHandoff.tool.details.result}` : ""
+      }.`
+    : "";
+  const toolContext = toolHandoff?.toolContext ?? null;
+  const toolContextText = toolContext
+    ? ` Почему сейчас: ${toolContext.whyThisToolNow} Что он прояснит: ${toolContext.whatItClarifies} Какой результат даст: ${toolContext.expectedOutputType}.`
+    : "";
 
   return {
-    reply: `${result.hybridRecommendation.reasoning.canonicalReason} Основной шаг — ${primary.title}: цель — ${goal}, на выходе — ${outcome}.${bridgeText} Следующий шаг: ${nextStep}.`,
+    reply: `${result.hybridRecommendation.reasoning.canonicalReason} Основной шаг — ${primary.title}: цель — ${goal}, на выходе — ${outcome}.${bridgeText}${handoffText}${toolContextText} Следующий шаг: ${nextStep}.`,
     mode: params.mode,
     step: 2,
     quickReplies: [],

@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { classifyHeuristicBundle } from "@/lib/recommendations/bundles";
 import { resolveCanonicalRecommendation } from "@/lib/recommendations/canonical";
 import { buildHybridRecommendation } from "@/lib/recommendations/orchestrate";
+import { buildToolContext } from "@/lib/recommendations/tool-context";
 
 import type {
   BusinessArchitectureSource,
@@ -94,8 +95,55 @@ function createSource(): BusinessArchitectureSource {
           result_ru: "KPI у каждого руководителя",
           section_ru: "МАРШРУТ В",
         },
+        {
+          id: "tool-raci",
+          title_ru: "Диагностика оргструктуры + RACI",
+          description_ru: "Карта ответственности и зон хаоса",
+          when_to_apply_ru: "Когда теряется управляемость",
+          result_ru: "Органиграмма с зонами хаоса",
+          section_ru: "МАРШРУТ В",
+        },
+        {
+          id: "tool-matrix",
+          title_ru: "Матрица полномочий",
+          description_ru: "Передача решений по уровням",
+          when_to_apply_ru: "Когда нужно разгрузить контур решений",
+          result_ru: "План делегирования по уровням",
+          section_ru: "МАРШРУТ Д",
+        },
+        {
+          id: "tool-session",
+          title_ru: "Стратегическая сессия",
+          description_ru: "Согласование стратегии с командой",
+          when_to_apply_ru: "Когда нужен общий стратегический контур",
+          result_ru: "Зафиксированная и разделяемая стратегия",
+          section_ru: "МАРШРУТ Б",
+        },
+        {
+          id: "tool-pestel",
+          title_ru: "PESTEL + Анализ конкурентов",
+          description_ru: "Внешний анализ рынка и конкурентов",
+          when_to_apply_ru: "Когда рост замедляется и нужен внешний контекст",
+          result_ru: "Понять есть ли рыночные ограничения",
+          section_ru: "ВНЕШНЯЯ СРЕДА",
+        },
       ],
-      symptom_tool_map: [],
+      symptom_tool_map: [
+        {
+          id: "symptom-market-1",
+          section_ru: "ВНЕШНЯЯ СРЕДА",
+          symptom_ru: "Не понимаем что происходит на рынке",
+          recommended_tool_ru: "PESTEL + Анализ конкурентов",
+          why_relevant_ru: "Нужен внешний ориентир для роста",
+        },
+        {
+          id: "symptom-owner-1",
+          section_ru: "КОНТУР СОБСТВЕННИКА",
+          symptom_ru: "Собственник перегружен и тормозит решения",
+          recommended_tool_ru: "Аудит роли собственника",
+          why_relevant_ru: "Нужно снять перегруз собственника",
+        },
+      ],
     },
     product: {
       navigator_tasks: [
@@ -492,4 +540,188 @@ test("phase 2A: rejects expansion for already diagnostic owner overload step", a
 
   assert.equal(result.hybridRecommendation?.composition, "canonical_only");
   assert.equal(result.hybridRecommendation?.optionalExpansions.length, 0);
+});
+
+test("phase 2B: route-linked tool handoff is included for direct tool match", async () => {
+  const result = await buildHybridRecommendation(
+    createContext({
+      mode: "growth",
+      selectedPath: "sales",
+      scores: { sales: 1, product: 1, owner: 4 },
+      mainFocus: "Сначала выровняйте продажи.",
+    }),
+    {
+      getSource: async () => createSource(),
+      logEvent: () => undefined,
+    },
+  );
+
+  assert.equal(result.hybridRecommendation?.toolHandoff?.source, "route_linked");
+  assert.equal(result.hybridRecommendation?.toolHandoff?.tool.title, "Аудит системы продаж");
+  assert.equal(result.hybridRecommendation?.toolHandoff?.reasonCode, "route_tool_exact_match");
+});
+
+test("phase 2B: symptom-linked tool handoff is included when route-linked tool is unavailable", async () => {
+  const source = createSource();
+  source.product.route_steps[0]!.tool_ru = "Внешний рыночный разбор";
+
+  const result = await buildHybridRecommendation(
+    createContext({
+      mode: "risk",
+      selectedPath: "growth_slowdown",
+      scores: { strategy: 1, market: 1, owner: 4 },
+      mainFocus: "Сначала соберите стратегический фокус.",
+    }),
+    {
+      getSource: async () => source,
+      logEvent: () => undefined,
+    },
+  );
+
+  assert.equal(result.hybridRecommendation?.toolHandoff?.source, "symptom_linked");
+  assert.equal(result.hybridRecommendation?.toolHandoff?.reasonCode, "symptom_tool_match");
+});
+
+test("phase 2B: no handoff is returned when no confident match exists", async () => {
+  const source = createSource();
+  source.knowledge.tools = [];
+  source.knowledge.symptom_tool_map = [];
+
+  const result = await buildHybridRecommendation(
+    createContext({
+      mode: "start",
+      selectedPath: "strategy",
+      scores: { strategy: 1, market: 1 },
+      mainFocus: "Сначала соберите стратегический фокус.",
+    }),
+    {
+      getSource: async () => source,
+      logEvent: () => undefined,
+    },
+  );
+
+  assert.equal(result.hybridRecommendation?.toolHandoff ?? null, null);
+});
+
+test("phase 2B: duplicate route-linked handoff without useful metadata falls back to symptom-linked", async () => {
+  const source = createSource();
+  const matrixTool = source.knowledge.tools.find(
+    (item) => item.title_ru === "Матрица полномочий",
+  );
+
+  if (!matrixTool) {
+    throw new Error("Fixture tool not found");
+  }
+
+  matrixTool.description_ru = null;
+  matrixTool.when_to_apply_ru = null;
+  matrixTool.result_ru = null;
+
+  const result = await buildHybridRecommendation(
+    createContext({
+      mode: "growth",
+      selectedPath: "decisions",
+      scores: { owner: 1, management: 1, sales: 4 },
+      mainFocus: "Сначала выровняйте контур «Роль собственника».",
+    }),
+    {
+      getSource: async () => source,
+      logEvent: () => undefined,
+    },
+  );
+
+  assert.equal(result.hybridRecommendation?.toolHandoff?.source, "symptom_linked");
+  assert.equal(result.hybridRecommendation?.toolHandoff?.reasonCode, "symptom_tool_match");
+});
+
+test("tool context enrichment appears when handoff has good metadata", async () => {
+  const result = await buildHybridRecommendation(
+    createContext({
+      mode: "growth",
+      selectedPath: "sales",
+      scores: { sales: 1, product: 1, owner: 4 },
+      mainFocus: "Сначала выровняйте продажи.",
+    }),
+    {
+      getSource: async () => createSource(),
+      logEvent: () => undefined,
+    },
+  );
+
+  assert.equal(result.hybridRecommendation?.toolHandoff?.toolContext !== null, true);
+  assert.equal(
+    Boolean(result.hybridRecommendation?.toolHandoff?.toolContext?.expectedOutputType),
+    true,
+  );
+});
+
+test("tool context enrichment does not appear when metadata is too empty", () => {
+  const result = buildToolContext({
+    ctx: createContext({
+      mode: "growth",
+      selectedPath: "sales",
+      scores: { sales: 1, product: 1, owner: 4 },
+      mainFocus: "Сначала выровняйте продажи.",
+    }),
+    handoff: {
+      source: "route_linked",
+      confidence: "high",
+      reasonCode: "route_tool_exact_match",
+      humanReadableReason: "direct match",
+      tool: {
+        origin: "canonical",
+        kind: "tool",
+        title: "Аудит системы продаж",
+        description: undefined,
+        canonicalRef: {
+          entityType: "tool",
+          entityId: "tool-sales-audit",
+        },
+        explanation: {
+          why: "direct match",
+          basedOn: {},
+          confidence: "high",
+        },
+        details: {
+          whenToApply: null,
+          result: null,
+        },
+      },
+    },
+  });
+
+  assert.equal(result.toolContext, null);
+  assert.equal(result.meta.reasonCode, "insufficient_metadata");
+});
+
+test("tool context enrichment does not appear without handoff", () => {
+  const result = buildToolContext({
+    ctx: createContext(),
+    handoff: null,
+  });
+
+  assert.equal(result.toolContext, null);
+  assert.equal(result.meta.reasonCode, "no_handoff");
+});
+
+test("tool context enrichment stays compact", async () => {
+  const result = await buildHybridRecommendation(
+    createContext({
+      mode: "start",
+      selectedPath: "strategy",
+      scores: { strategy: 1, market: 1, owner: 4 },
+      mainFocus: "Сначала соберите стратегический фокус.",
+    }),
+    {
+      getSource: async () => createSource(),
+      logEvent: () => undefined,
+    },
+  );
+
+  const toolContext = result.hybridRecommendation?.toolHandoff?.toolContext;
+
+  assert.equal(Boolean(toolContext), true);
+  assert.equal((toolContext?.whyThisToolNow.length ?? 0) < 170, true);
+  assert.equal((toolContext?.whatItClarifies.length ?? 0) < 170, true);
+  assert.equal((toolContext?.expectedOutputType.length ?? 0) < 170, true);
 });

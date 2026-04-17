@@ -56,6 +56,7 @@ export interface RecommendationItem {
     goal?: string | null;
     result?: string | null;
     nextStepGoal?: string | null;
+    whenToApply?: string | null;
   };
 }
 
@@ -75,12 +76,51 @@ export interface ExpansionPolicyDecision {
 export interface RecommendationReasoning {
   canonicalReason: string;
   expansionReasonSummary?: string | null;
+  toolHandoffReasonSummary?: string | null;
+}
+
+export interface ToolHandoff {
+  source: "route_linked" | "symptom_linked";
+  tool: RecommendationItem;
+  confidence: "high" | "medium";
+  reasonCode:
+    | "route_tool_exact_match"
+    | "route_tool_keyword_match"
+    | "symptom_tool_match"
+    | "no_confident_tool_match";
+  humanReadableReason: string;
+  toolContext?: ToolContext | null;
+  enrichmentMeta?: ToolContextEnrichmentMeta | null;
+}
+
+export interface ToolContext {
+  whyThisToolNow: string;
+  whatItClarifies: string;
+  expectedOutputType: string;
+}
+
+export interface ToolContextEnrichmentMeta {
+  included: boolean;
+  reasonCode:
+    | "metadata_and_bundle"
+    | "metadata_only"
+    | "bundle_template_only"
+    | "insufficient_metadata"
+    | "no_handoff"
+    | "too_generic"
+    | "duplicate_without_value";
+  humanReadableReason: string;
+  usedDescription: boolean;
+  usedWhenToApply: boolean;
+  usedResult: boolean;
+  usedBundleTemplate: boolean;
 }
 
 export interface HybridRecommendation {
   composition: RecommendationComposition;
   primaryRecommendation: RecommendationItem;
   optionalExpansions: RecommendationItem[];
+  toolHandoff?: ToolHandoff | null;
   reasoning: RecommendationReasoning;
   expansionPolicy: ExpansionPolicyDecision[];
 }
@@ -110,12 +150,24 @@ export interface NavigatorTaskEntry {
 
 export interface KnowledgeToolEntry {
   id: string;
+  layer_ru?: string | null;
+  subcategory_ru?: string | null;
   title_ru: string;
-  description_ru: string;
-  when_to_apply_ru?: string;
-  result_ru?: string;
-  section_ru?: string;
-  url?: string;
+  description_ru: string | null;
+  when_to_apply_ru?: string | null;
+  result_ru?: string | null;
+  section_ru?: string | null;
+  url?: string | null;
+  source_row?: number;
+}
+
+export interface SymptomToolMapEntry {
+  id: string;
+  section_ru: string;
+  symptom_ru: string;
+  recommended_tool_ru: string;
+  why_relevant_ru: string;
+  source_row?: number;
 }
 
 export interface BusinessArchitectureSource {
@@ -125,7 +177,7 @@ export interface BusinessArchitectureSource {
   };
   knowledge: {
     tools: KnowledgeToolEntry[];
-    symptom_tool_map: unknown[];
+    symptom_tool_map: SymptomToolMapEntry[];
   };
   product: {
     navigator_tasks: NavigatorTaskEntry[];
