@@ -63,13 +63,20 @@ export default function OnboardingPage() {
         body: JSON.stringify(parsed.data),
       });
 
-      const data = (await response.json()) as {
+      const raw = await response.text();
+      let data: {
         error?: string;
         company?: { id: string };
-      };
+      } = {};
+
+      try {
+        data = raw ? (JSON.parse(raw) as typeof data) : {};
+      } catch {
+        data = {};
+      }
 
       if (!response.ok) {
-        alert(data.error ?? "Не удалось сохранить компанию.");
+        alert(data.error ?? raw ?? "Не удалось сохранить компанию.");
         return;
       }
 
@@ -78,8 +85,12 @@ export default function OnboardingPage() {
       }
 
       router.push("/dashboard");
-    } catch {
-      alert("Не удалось отправить форму. Попробуйте еще раз.");
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message.trim().length > 0
+          ? error.message
+          : "Не удалось отправить форму. Попробуйте еще раз.";
+      alert(message);
     } finally {
       setIsSubmitting(false);
     }
