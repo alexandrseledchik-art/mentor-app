@@ -123,13 +123,19 @@ export async function POST(request: Request) {
 
     if (companyError || !company) {
       console.error("COMPANY ERROR FULL:", JSON.stringify(companyError, null, 2));
-      await supabase
-        .from("users")
-        .delete()
-        .eq("id", appUser.id)
-        .catch((cleanupError) => {
+      try {
+        const { error: cleanupError } = await supabase
+          .from("users")
+          .delete()
+          .eq("id", appUser.id);
+
+        if (cleanupError) {
           console.error("COMPANY APP USER CLEANUP ERROR:", cleanupError);
-        });
+        }
+      } catch (cleanupError) {
+        console.error("COMPANY APP USER CLEANUP ERROR:", cleanupError);
+      }
+
       await supabase.auth.admin.deleteUser(authUser.id).catch((cleanupError) => {
         console.error("COMPANY AUTH USER CLEANUP ERROR:", cleanupError);
       });
