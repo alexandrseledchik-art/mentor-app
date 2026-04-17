@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 
 import { handleTelegramEntry } from "@/lib/entry/handle-entry";
-import { sendTelegramEntryReply } from "@/lib/entry/telegram-bot";
+import { sendTelegramEntryReply } from "@/lib/telegram/telegram-bot";
+import { shouldSendEntryOffer } from "@/lib/telegram/entry-session";
+import { sendEntryOffer } from "@/lib/telegram/send-entry-offer";
 
 type TelegramWebhookUpdate = {
   message?: {
@@ -39,6 +41,16 @@ export async function POST(request: Request) {
 
   if (!text || !chatId || !telegramUserId) {
     return NextResponse.json({ ok: true, processed: false });
+  }
+
+  if (await shouldSendEntryOffer({ telegramUserId, text })) {
+    await sendEntryOffer(chatId);
+
+    return NextResponse.json({
+      ok: true,
+      processed: true,
+      stage: "offer_sent",
+    });
   }
 
   const result = await handleTelegramEntry({
