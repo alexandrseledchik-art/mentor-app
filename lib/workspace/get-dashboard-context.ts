@@ -1,7 +1,8 @@
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/db";
-import type { Company, DiagnosisSession } from "@/types/domain";
+import type { Company, DiagnosisAnswerInput, DiagnosisSession } from "@/types/domain";
 
+import { getActiveDiagnosisSession } from "./get-active-diagnosis";
 import { getCurrentAppUser } from "./get-current-app-user";
 import { getOrCreateWorkspace } from "./get-or-create-workspace";
 import type { AppUserIdentity, Workspace } from "./types";
@@ -25,6 +26,37 @@ function mapCompany(row: CompanyRow): Company {
   };
 }
 
+function parseAnswersSnapshot(value: DiagnosisSessionRow["answers"]) {
+  if (!Array.isArray(value)) {
+    return null;
+  }
+
+  const parsed = value.reduce<DiagnosisAnswerInput[]>((accumulator, item) => {
+    if (
+      item &&
+      typeof item === "object" &&
+      !Array.isArray(item) &&
+      "questionId" in item &&
+      "answerValue" in item &&
+      typeof item.questionId === "string" &&
+      typeof item.answerValue === "number"
+    ) {
+      accumulator.push({
+        questionId: item.questionId,
+        answerValue: item.answerValue,
+        answerLabel:
+          "answerLabel" in item && typeof item.answerLabel === "string"
+            ? item.answerLabel
+            : null,
+      });
+    }
+
+    return accumulator;
+  }, []);
+
+  return parsed.length > 0 ? parsed : null;
+}
+
 function mapDiagnosisSession(row: DiagnosisSessionRow): DiagnosisSession {
   return {
     id: row.id,
@@ -36,6 +68,8 @@ function mapDiagnosisSession(row: DiagnosisSessionRow): DiagnosisSession {
       row.summary_key === "low" || row.summary_key === "medium" || row.summary_key === "high"
         ? row.summary_key
         : null,
+    currentStep: row.current_step ?? null,
+    answersSnapshot: parseAnswersSnapshot(row.answers),
     createdAt: row.created_at,
     completedAt: row.completed_at,
   };
@@ -45,7 +79,8 @@ export interface DashboardWorkspaceContext {
   user: AppUserIdentity;
   workspace: Workspace;
   activeCompany: Company | null;
-  latestDiagnosis: DiagnosisSession | null;
+  activeDiagnosis: DiagnosisSession | null;
+  lastCompletedDiagnosis: DiagnosisSession | null;
 }
 
 export async function getDashboardWorkspaceContext(): Promise<DashboardWorkspaceContext | null> {
@@ -59,32 +94,36 @@ export async function getDashboardWorkspaceContext(): Promise<DashboardWorkspace
   const supabase = getSupabaseAdminClient();
 
   let activeCompany: Company | null = null;
-  let latestDiagnosis: DiagnosisSession | null = null;
+  const activeDiagnosis = await getActiveDiagnosisSession(user.id);
+  let lastCompletedDiagnosis: DiagnosisSession | null = null;
 
   if (workspace.activeCompanyId) {
-    const [{ data: company }, { data: diagnosis }] = await Promise.all([
+    const [{ data: company }, lastCompletedResult] = await Promise.all([
       supabase
         .from("companies")
         .select("*")
         .eq("id", workspace.activeCompanyId)
         .maybeSingle(),
-      supabase
-        .from("diagnosis_sessions")
-        .select("*")
-        .eq("company_id", workspace.activeCompanyId)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
+      workspace.lastCompletedDiagnosisSessionId
+        ? supabase
+            .from("diagnosis_sessions")
+            .select("*")
+            .eq("id", workspace.lastCompletedDiagnosisSessionId)
+            .maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
     ]);
 
     activeCompany = company ? mapCompany(company as CompanyRow) : null;
-    latestDiagnosis = diagnosis ? mapDiagnosisSession(diagnosis as DiagnosisSessionRow) : null;
+    lastCompletedDiagnosis = lastCompletedResult.data
+      ? mapDiagnosisSession(lastCompletedResult.data as DiagnosisSessionRow)
+      : null;
   }
 
   return {
     user,
     workspace,
     activeCompany,
-    latestDiagnosis,
+    activeDiagnosis,
+    lastCompletedDiagnosis,
   };
 }

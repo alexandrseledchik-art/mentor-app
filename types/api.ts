@@ -36,6 +36,8 @@ export interface CompanyUpsertRequest {
 export interface DashboardResponse {
   user: User;
   company: Company | null;
+  activeDiagnosis: DiagnosisSession | null;
+  lastCompletedDiagnosis: DiagnosisSession | null;
   latestDiagnosis: DiagnosisSession | null;
   featuredTools: Tool[];
 }

@@ -57,6 +57,18 @@ export default async function DashboardPage() {
     redirect("/onboarding");
   }
 
+  const primaryDiagnosisCta = data.activeDiagnosis
+    ? {
+        href: "/diagnosis",
+        label: "Продолжить диагностику",
+        helper: "У вас есть незавершённая диагностика.",
+      }
+    : {
+        href: "/diagnosis",
+        label: "Пройти диагностику",
+        helper: null,
+      };
+
   return (
     <main className="page-shell">
       <section className="card">
@@ -77,10 +89,24 @@ export default async function DashboardPage() {
 
           <section>
             <h2>Что делать дальше</h2>
+            {primaryDiagnosisCta.helper ? (
+              <p className="muted">{primaryDiagnosisCta.helper}</p>
+            ) : null}
+            {data.lastCompletedDiagnosis ? (
+              <p className="muted">Последняя диагностика доступна для просмотра.</p>
+            ) : null}
             <div className="action-row">
-              <Link href="/diagnosis" className="button-link">
-                Пройти диагностику
+              <Link href={primaryDiagnosisCta.href} className="button-link">
+                {primaryDiagnosisCta.label}
               </Link>
+              {data.lastCompletedDiagnosis ? (
+                <Link
+                  href={`/diagnosis/${data.lastCompletedDiagnosis.id}`}
+                  className="button-link button-link-secondary"
+                >
+                  Открыть последний результат
+                </Link>
+              ) : null}
               <Link href="/tools" className="button-link button-link-secondary">
                 Инструменты
               </Link>
