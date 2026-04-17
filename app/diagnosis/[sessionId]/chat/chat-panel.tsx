@@ -107,7 +107,7 @@ export function DiagnosisChatPanel({ sessionId }: { sessionId: string }) {
               item.role === "user" ? "chat-message-user" : "chat-message-assistant"
             }`}
           >
-            <strong>{item.role === "user" ? "Вы" : "ИИ"}</strong>
+            <strong>{item.role === "user" ? "Вы" : "Разбор"}</strong>
             <p>{item.text}</p>
           </div>
         )) : (
