@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { ResultAiPanel } from "@/app/components/result-ai-panel";
+import { ResultToolsPanel } from "@/app/components/result-tools-panel";
 import {
   getFallbackMainSummary,
   getFallbackWhyNow,
@@ -149,6 +150,11 @@ export default async function DiagnosisResultPage({
           </section>
 
           <ResultTools tools={data.resultRecommendedTools} />
+
+          <ResultToolsPanel
+            toolsUrl={`/api/diagnosis/result/${sessionId}/tools`}
+            explainBaseUrl={`/api/diagnosis/result/${sessionId}/tools`}
+          />
 
           <ResultAiPanel
             summaryUrl={`/api/diagnosis/result/${sessionId}/ai-summary`}

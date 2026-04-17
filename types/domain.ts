@@ -197,6 +197,41 @@ export interface AiResultChatResponse {
   suggestedFollowups?: string[];
 }
 
+export interface ResultRecommendedToolItem {
+  slug: string;
+  title: string;
+  whyRecommended: string;
+}
+
+export interface ToolNavigationContext {
+  company: {
+    id: string;
+    name: string;
+    industry?: string | null;
+    teamSize?: string | null;
+  };
+  result: {
+    sourceType: "live_result" | "snapshot";
+    overallScore: number | null;
+    weakestZones: string[];
+    strongestZones: string[];
+  };
+  tool: {
+    slug: string;
+    title: string;
+  };
+  recommendationReason: string;
+}
+
+export interface AiToolExplanationResponse {
+  whyThisTool: string;
+  whatProblemItSolves: string[];
+  whereToApply: string[];
+  whatToPrepare: string[];
+  commonMistakes: string[];
+  expectedOutcome: string;
+}
+
 export interface ToolCategory {
   id: UUID;
   slug: string;

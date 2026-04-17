@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 
 import { ScoreCard } from "@/app/diagnosis/[sessionId]/score-card";
 import { ResultAiPanel } from "@/app/components/result-ai-panel";
+import { ResultToolsPanel } from "@/app/components/result-tools-panel";
 import type { ResultSnapshotDetailResponse } from "@/types/api";
 
 function formatSnapshotDate(value: string) {
@@ -95,6 +96,11 @@ export default async function ResultSnapshotPage({
               ))}
             </ul>
           </section>
+
+          <ResultToolsPanel
+            toolsUrl={`/api/results/${snapshotId}/tools`}
+            explainBaseUrl={`/api/results/${snapshotId}/tools`}
+          />
 
           <ResultAiPanel
             summaryUrl={`/api/results/${snapshotId}/ai-summary`}

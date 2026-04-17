@@ -130,6 +130,21 @@ export const aiResultChatResponseSchema = z.object({
   suggestedFollowups: z.array(z.string().trim().min(1)).max(4).optional(),
 });
 
+export const resultRecommendedToolItemSchema = z.object({
+  slug: z.string().trim().min(1),
+  title: z.string().trim().min(1),
+  whyRecommended: z.string().trim().min(1),
+});
+
+export const aiToolExplanationResponseSchema = z.object({
+  whyThisTool: z.string().trim().min(1),
+  whatProblemItSolves: z.array(z.string().trim().min(1)).min(2).max(4),
+  whereToApply: z.array(z.string().trim().min(1)).min(2).max(4),
+  whatToPrepare: z.array(z.string().trim().min(1)).min(2).max(4),
+  commonMistakes: z.array(z.string().trim().min(1)).min(2).max(4),
+  expectedOutcome: z.string().trim().min(1),
+});
+
 export const diagnosisSummaryContextSchema = z.object({
   weakestDomains: z.array(z.string().min(1)),
   strongestDomains: z.array(z.string().min(1)),

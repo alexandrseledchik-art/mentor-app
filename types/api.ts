@@ -16,6 +16,9 @@ import type {
   AiResultSummaryResponse,
   AiResultChatRequest,
   AiResultChatResponse,
+  ResultRecommendedToolItem,
+  ToolNavigationContext,
+  AiToolExplanationResponse,
   ResultRecommendedTool,
   RecommendedTool,
   Tool,
@@ -123,3 +126,9 @@ export interface ResultAiSummaryApiResponse extends AiResultSummaryResponse {}
 export interface ResultAiChatApiRequest extends AiResultChatRequest {}
 
 export interface ResultAiChatApiResponse extends AiResultChatResponse {}
+
+export interface ResultToolsApiResponse {
+  items: ResultRecommendedToolItem[];
+}
+
+export interface ResultToolExplainApiResponse extends AiToolExplanationResponse {}
