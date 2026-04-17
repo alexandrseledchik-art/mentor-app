@@ -19,6 +19,11 @@ import type {
   ResultRecommendedToolItem,
   ToolNavigationContext,
   AiToolExplanationResponse,
+  EntryHypothesis,
+  EntryIntent,
+  EntryRoutingDecision,
+  EntrySessionState,
+  TelegramEntryReply,
   ResultRecommendedTool,
   RecommendedTool,
   Tool,
@@ -132,3 +137,19 @@ export interface ResultToolsApiResponse {
 }
 
 export interface ResultToolExplainApiResponse extends AiToolExplanationResponse {}
+
+export interface TelegramEntryRequest {
+  telegramUserId: number;
+  text: string;
+  telegramUsername?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+}
+
+export interface TelegramEntryResponse {
+  reply: TelegramEntryReply;
+  session: EntrySessionState;
+  intent: EntryIntent | null;
+  hypothesis: EntryHypothesis | null;
+  decision: EntryRoutingDecision;
+}

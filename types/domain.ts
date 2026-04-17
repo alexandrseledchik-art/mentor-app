@@ -232,6 +232,89 @@ export interface AiToolExplanationResponse {
   expectedOutcome: string;
 }
 
+export type EntryMode =
+  | "problem_first"
+  | "tool_discovery"
+  | "specific_tool_request"
+  | "unclear";
+
+export interface EntryIntent {
+  rawText: string;
+  primaryIntent:
+    | "growth_problem"
+    | "sales_problem"
+    | "team_problem"
+    | "management_problem"
+    | "finance_problem"
+    | "operations_problem"
+    | "tool_request"
+    | "unclear";
+  possibleDomains: string[];
+  confidence: "low" | "medium" | "high";
+}
+
+export type ToolConfidence = "low" | "medium" | "high";
+
+export interface EntrySessionState {
+  telegramUserId: number;
+  stage: "initial" | "clarifying" | "ready_for_routing";
+  entryMode: EntryMode;
+  initialMessage: string;
+  detectedIntent: EntryIntent | null;
+  toolConfidence?: ToolConfidence;
+  clarifyingAnswers: Array<{
+    questionKey: string;
+    questionText: string;
+    answerText: string;
+  }>;
+  turnCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EntryRoutingDecision {
+  action:
+    | "ask_question"
+    | "route_to_diagnosis"
+    | "route_to_tool"
+    | "confirm_tool_then_route";
+  nextQuestion?: {
+    key: string;
+    text: string;
+  };
+  toolSuggestion?: {
+    slug: string;
+    title: string;
+    url: string;
+  };
+  reason: string;
+}
+
+export interface EntryHypothesis {
+  summary: string;
+  likelyAreas: string[];
+  uncertaintyNote: string;
+}
+
+export interface ToolDemandSignal {
+  toolQuery: string;
+  normalizedTool?: string;
+  entryMode: EntryMode;
+  detectedIntent?: string;
+  confidence: "low" | "medium" | "high";
+  telegramUserId: number;
+  createdAt: string;
+}
+
+export interface TelegramEntryReply {
+  text: string;
+  cta?: {
+    label: string;
+    url: string;
+  };
+  stage: "clarifying" | "ready_for_routing";
+}
+
 export interface ToolCategory {
   id: UUID;
   slug: string;

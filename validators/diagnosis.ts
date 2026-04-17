@@ -145,6 +145,89 @@ export const aiToolExplanationResponseSchema = z.object({
   expectedOutcome: z.string().trim().min(1),
 });
 
+export const entryIntentSchema = z.object({
+  rawText: z.string().trim().min(1),
+  primaryIntent: z.enum([
+    "growth_problem",
+    "sales_problem",
+    "team_problem",
+    "management_problem",
+    "finance_problem",
+    "operations_problem",
+    "tool_request",
+    "unclear",
+  ]),
+  possibleDomains: z.array(z.string().trim().min(1)).max(4),
+  confidence: z.enum(["low", "medium", "high"]),
+});
+
+export const entrySessionStateSchema = z.object({
+  telegramUserId: z.number().int().positive(),
+  stage: z.enum(["initial", "clarifying", "ready_for_routing"]),
+  entryMode: z.enum(["problem_first", "tool_discovery", "specific_tool_request", "unclear"]),
+  initialMessage: z.string().trim().min(1),
+  detectedIntent: entryIntentSchema.nullable(),
+  toolConfidence: z.enum(["low", "medium", "high"]).optional(),
+  clarifyingAnswers: z.array(
+    z.object({
+      questionKey: z.string().trim().min(1),
+      questionText: z.string().trim().min(1),
+      answerText: z.string().trim().min(1),
+    }),
+  ),
+  turnCount: z.number().int().min(1),
+  createdAt: z.string().min(1),
+  updatedAt: z.string().min(1),
+});
+
+export const entryHypothesisSchema = z.object({
+  summary: z.string().trim().min(1),
+  likelyAreas: z.array(z.string().trim().min(1)).min(1).max(4),
+  uncertaintyNote: z.string().trim().min(1),
+});
+
+export const entryRoutingDecisionSchema = z.object({
+  action: z.enum([
+    "ask_question",
+    "route_to_diagnosis",
+    "route_to_tool",
+    "confirm_tool_then_route",
+  ]),
+  nextQuestion: z
+    .object({
+      key: z.string().trim().min(1),
+      text: z.string().trim().min(1),
+    })
+    .optional(),
+  toolSuggestion: z
+    .object({
+      slug: z.string().trim().min(1),
+      title: z.string().trim().min(1),
+      url: z.string().trim().min(1),
+    })
+    .optional(),
+  reason: z.string().trim().min(1),
+});
+
+export const telegramEntryReplySchema = z.object({
+  text: z.string().trim().min(1),
+  cta: z
+    .object({
+      label: z.string().trim().min(1),
+      url: z.string().trim().min(1),
+    })
+    .optional(),
+  stage: z.enum(["clarifying", "ready_for_routing"]),
+});
+
+export const telegramEntryRequestSchema = z.object({
+  telegramUserId: z.number().int().positive(),
+  text: z.string().trim().min(1).max(4000),
+  telegramUsername: z.string().trim().min(1).max(255).nullable().optional(),
+  firstName: z.string().trim().min(1).max(255).nullable().optional(),
+  lastName: z.string().trim().min(1).max(255).nullable().optional(),
+});
+
 export const diagnosisSummaryContextSchema = z.object({
   weakestDomains: z.array(z.string().min(1)),
   strongestDomains: z.array(z.string().min(1)),

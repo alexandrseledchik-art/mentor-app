@@ -269,6 +269,54 @@ export interface Database {
           },
         ];
       };
+      entry_sessions: {
+        Row: {
+          clarifying_answers: Json;
+          created_at: string;
+          detected_intent: Json | null;
+          entry_mode: string;
+          id: string;
+          initial_message: string;
+          last_question_key: string | null;
+          last_question_text: string | null;
+          stage: string;
+          telegram_user_id: number;
+          tool_confidence: string | null;
+          turn_count: number;
+          updated_at: string;
+        };
+        Insert: {
+          clarifying_answers?: Json;
+          created_at?: string;
+          detected_intent?: Json | null;
+          entry_mode?: string;
+          id?: string;
+          initial_message: string;
+          last_question_key?: string | null;
+          last_question_text?: string | null;
+          stage?: string;
+          telegram_user_id: number;
+          tool_confidence?: string | null;
+          turn_count?: number;
+          updated_at?: string;
+        };
+        Update: {
+          clarifying_answers?: Json;
+          created_at?: string;
+          detected_intent?: Json | null;
+          entry_mode?: string;
+          id?: string;
+          initial_message?: string;
+          last_question_key?: string | null;
+          last_question_text?: string | null;
+          stage?: string;
+          telegram_user_id?: number;
+          tool_confidence?: string | null;
+          turn_count?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       result_snapshots: {
         Row: {
           company_id: string;
@@ -472,6 +520,39 @@ export interface Database {
             referencedColumns: ["id"];
           },
         ];
+      };
+      tool_demand_signals: {
+        Row: {
+          confidence: string;
+          created_at: string;
+          detected_intent: string | null;
+          entry_mode: string;
+          id: string;
+          normalized_tool: string | null;
+          telegram_user_id: number;
+          tool_query: string;
+        };
+        Insert: {
+          confidence: string;
+          created_at?: string;
+          detected_intent?: string | null;
+          entry_mode: string;
+          id?: string;
+          normalized_tool?: string | null;
+          telegram_user_id: number;
+          tool_query: string;
+        };
+        Update: {
+          confidence?: string;
+          created_at?: string;
+          detected_intent?: string | null;
+          entry_mode?: string;
+          id?: string;
+          normalized_tool?: string | null;
+          telegram_user_id?: number;
+          tool_query?: string;
+        };
+        Relationships: [];
       };
       users: {
         Row: {
