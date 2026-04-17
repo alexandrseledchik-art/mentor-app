@@ -344,7 +344,7 @@ export async function POST(request: Request) {
   }
 
   const supabase = getSupabaseAdminClient();
-  const { sessionId, message } = parsed.data;
+  const { sessionId, message, mode, step, selectedPath } = parsed.data;
   const { data: session, error: sessionError } = await supabase
     .from("diagnosis_sessions")
     .select("*")
@@ -410,6 +410,9 @@ export async function POST(request: Request) {
       {
         context: chatContext,
         question: message,
+        mode: mode ?? null,
+        step: step ?? null,
+        selected_path: selectedPath ?? null,
       },
       null,
       2,
@@ -418,6 +421,9 @@ export async function POST(request: Request) {
   const reply = await generateDiagnosisChatReply({
     context: chatContext,
     question: message,
+    mode,
+    step,
+    selectedPath,
   });
 
   if (!reply) {

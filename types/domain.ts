@@ -204,6 +204,16 @@ export interface DiagnosisChatContext {
   };
 }
 
+export type DiagnosisChatMode = "growth" | "risk" | "start";
+
+export interface DiagnosisChatQuickReply {
+  label: string;
+  selectedPath: string;
+}
+
 export interface DiagnosisChatReply {
   reply: string;
+  mode?: DiagnosisChatMode | null;
+  step?: number | null;
+  quickReplies?: DiagnosisChatQuickReply[];
 }

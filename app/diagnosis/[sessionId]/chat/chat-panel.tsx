@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 
 import type { DiagnosisChatResponse } from "@/types/api";
+import type { DiagnosisChatMode, DiagnosisChatQuickReply } from "@/types/domain";
 
 const STARTER_QUESTIONS = [
   "Поясни главный вывод",
@@ -11,6 +12,12 @@ const STARTER_QUESTIONS = [
   "Что мешает росту",
   "Где главный риск",
 ];
+
+const STARTER_MODES: Partial<Record<string, DiagnosisChatMode>> = {
+  "Что мешает росту": "growth",
+  "Где главный риск": "risk",
+  "С чего начать": "start",
+};
 
 type ChatMessage = {
   role: "user" | "assistant";
@@ -22,8 +29,18 @@ export function DiagnosisChatPanel({ sessionId }: { sessionId: string }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [activeMode, setActiveMode] = useState<DiagnosisChatMode | null>(null);
+  const [activeStep, setActiveStep] = useState<number | null>(null);
+  const [quickReplies, setQuickReplies] = useState<DiagnosisChatQuickReply[]>([]);
 
-  async function sendMessage(nextMessage: string) {
+  async function sendMessage(
+    nextMessage: string,
+    options?: {
+      mode?: DiagnosisChatMode | null;
+      step?: number | null;
+      selectedPath?: string;
+    },
+  ) {
     const trimmed = nextMessage.trim();
 
     if (!trimmed) {
@@ -44,6 +61,9 @@ export function DiagnosisChatPanel({ sessionId }: { sessionId: string }) {
         body: JSON.stringify({
           sessionId,
           message: trimmed,
+          mode: options?.mode ?? undefined,
+          step: options?.step ?? undefined,
+          selectedPath: options?.selectedPath,
         }),
       });
 
@@ -58,6 +78,9 @@ export function DiagnosisChatPanel({ sessionId }: { sessionId: string }) {
       }
 
       setMessages((current) => [...current, { role: "assistant", text: data.reply }]);
+      setActiveMode(data.mode ?? null);
+      setActiveStep(data.step ?? null);
+      setQuickReplies(data.quickReplies ?? []);
     } catch (nextError) {
       setError(
         nextError instanceof Error
@@ -91,7 +114,12 @@ export function DiagnosisChatPanel({ sessionId }: { sessionId: string }) {
               type="button"
               className="starter-button"
               disabled={isLoading}
-              onClick={() => void sendMessage(item)}
+              onClick={() =>
+                void sendMessage(item, {
+                  mode: STARTER_MODES[item] ?? null,
+                  step: STARTER_MODES[item] ? 1 : null,
+                })
+              }
             >
               {item}
             </button>
@@ -116,6 +144,30 @@ export function DiagnosisChatPanel({ sessionId }: { sessionId: string }) {
           </p>
         )}
       </section>
+
+      {quickReplies.length > 0 ? (
+        <section>
+          <div className="action-row">
+            {quickReplies.map((item) => (
+              <button
+                key={`${activeMode ?? "mode"}-${item.selectedPath}`}
+                type="button"
+                className="starter-button"
+                disabled={isLoading}
+                onClick={() =>
+                  void sendMessage(item.label, {
+                    mode: activeMode,
+                    step: (activeStep ?? 1) + 1,
+                    selectedPath: item.selectedPath,
+                  })
+                }
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <form className="form-stack" onSubmit={handleSubmit}>
         <label className="field">

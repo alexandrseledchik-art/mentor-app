@@ -2,6 +2,7 @@ import type {
   DiagnosisAnswerInput,
   DiagnosisDimensionScore,
   DiagnosisChatContext,
+  DiagnosisChatMode,
   DiagnosisChatReply,
   Company,
   DiagnosisQuestion,
@@ -84,6 +85,9 @@ export interface DiagnosisResultResponse {
 export interface DiagnosisChatRequest {
   sessionId: string;
   message: string;
+  mode?: DiagnosisChatMode;
+  step?: number;
+  selectedPath?: string;
 }
 
 export interface DiagnosisChatResponse extends DiagnosisChatReply {

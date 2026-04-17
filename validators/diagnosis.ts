@@ -169,10 +169,23 @@ export const diagnosisChatContextSchema = z.object({
 export const diagnosisChatRequestSchema = z.object({
   sessionId: z.string().uuid(),
   message: z.string().trim().min(1).max(2000),
+  mode: z.enum(["growth", "risk", "start"]).optional(),
+  step: z.number().int().min(1).max(2).optional(),
+  selectedPath: z.string().trim().min(1).max(200).optional(),
 });
 
 export const diagnosisChatReplySchema = z.object({
   reply: z.string().trim().min(1),
+  mode: z.enum(["growth", "risk", "start"]).nullable().optional(),
+  step: z.number().int().min(1).max(2).nullable().optional(),
+  quickReplies: z
+    .array(
+      z.object({
+        label: z.string().trim().min(1),
+        selectedPath: z.string().trim().min(1),
+      }),
+    )
+    .optional(),
 });
 
 export const diagnosisChatResponseSchema = diagnosisChatReplySchema.extend({
