@@ -114,17 +114,24 @@ export function ResultToolsPanel({ toolsUrl, explainBaseUrl }: ResultToolsPanelP
             const isSelected = selectedTool?.slug === tool.slug;
 
             return (
-              <article key={tool.slug} className="tool-card">
+              <article
+                key={tool.slug}
+                className={`tool-card${isSelected ? " tool-card-selected" : ""}`}
+              >
+                {isSelected ? <span className="eyebrow">Выбранный инструмент</span> : null}
                 <h3>{tool.title}</h3>
                 <p>{tool.whyRecommended}</p>
                 <div className="action-row">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedTool(tool)}
-                    disabled={isSelected}
-                  >
-                    {isSelected ? "Выбран" : "Выбрать"}
-                  </button>
+                  {isSelected ? (
+                    <span className="tool-selected-pill">Выбран</span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedTool(tool)}
+                    >
+                      Выбрать
+                    </button>
+                  )}
                   <Link href={buildToolHref(tool.slug)} className="button-link button-link-secondary">
                     Открыть инструмент
                   </Link>
@@ -138,8 +145,11 @@ export function ResultToolsPanel({ toolsUrl, explainBaseUrl }: ResultToolsPanelP
       {selectedTool ? (
         <div className="section-stack">
           <section>
-            <h3>{selectedTool.title}</h3>
-            <p className="muted">{selectedTool.whyRecommended}</p>
+            <h3>Разбор выбранного инструмента</h3>
+            <p className="muted">
+              Выбрано: {selectedTool.title}. Ниже можно быстро понять, почему этот инструмент
+              релевантен именно сейчас, а затем открыть его отдельно.
+            </p>
             <div className="action-row">
               <button
                 type="button"
