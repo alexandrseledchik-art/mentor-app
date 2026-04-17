@@ -4,6 +4,14 @@ import { redirect } from "next/navigation";
 
 import type { DashboardResponse } from "@/types/api";
 
+function formatSnapshotDate(value: string) {
+  return new Intl.DateTimeFormat("ru-RU", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  }).format(new Date(value));
+}
+
 async function loadDashboardData() {
   const requestHeaders = await headers();
   const host = requestHeaders.get("host");
@@ -112,6 +120,28 @@ export default async function DashboardPage() {
               </Link>
             </div>
           </section>
+
+          {data.latestResultSnapshot ? (
+            <section>
+              <h2>Результаты диагностики</h2>
+              <p className="muted">
+                Предыдущие результаты доступны в кабинете.
+                {" "}
+                Последний снимок: {formatSnapshotDate(data.latestResultSnapshot.createdAt)}
+                {typeof data.latestResultSnapshot.overallScore === "number"
+                  ? ` · Балл: ${data.latestResultSnapshot.overallScore}`
+                  : ""}
+              </p>
+              {data.resultHistoryCount > 1 ? (
+                <p className="muted">Доступно результатов: {data.resultHistoryCount}</p>
+              ) : null}
+              <div className="action-row">
+                <Link href="/results" className="button-link button-link-secondary">
+                  Смотреть все результаты
+                </Link>
+              </div>
+            </section>
+          ) : null}
         </div>
       </section>
     </main>

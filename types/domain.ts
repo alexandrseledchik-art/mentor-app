@@ -113,6 +113,31 @@ export interface DiagnosisResultSummary {
   risks: string[];
 }
 
+export interface DiagnosisResultHistoryItem {
+  snapshotId: UUID;
+  diagnosisSessionId: UUID;
+  createdAt: string;
+  overallScore: number | null;
+  summaryKey: DiagnosisResultSummary["key"] | null;
+  weakestZones: string[];
+  strongestZones: string[];
+}
+
+export interface ResultSnapshotDetail {
+  snapshotId: UUID;
+  diagnosisSessionId: UUID;
+  createdAt: string;
+  overallScore: number | null;
+  dimensionScores: DiagnosisDimensionScore[];
+  weakestZones: string[];
+  strongestZones: string[];
+  summary: DiagnosisResultSummary;
+  recommendedTools: Array<{
+    title: string;
+    whyRecommended: string;
+  }>;
+}
+
 export interface ToolCategory {
   id: UUID;
   slug: string;

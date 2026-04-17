@@ -10,7 +10,9 @@ import type {
   DiagnosisResultSummary,
   DiagnosisAiSummary,
   DiagnosisSummaryContext,
+  DiagnosisResultHistoryItem,
   DiagnosisSession,
+  ResultSnapshotDetail,
   ResultRecommendedTool,
   RecommendedTool,
   Tool,
@@ -38,6 +40,8 @@ export interface DashboardResponse {
   company: Company | null;
   activeDiagnosis: DiagnosisSession | null;
   lastCompletedDiagnosis: DiagnosisSession | null;
+  latestResultSnapshot: DiagnosisResultHistoryItem | null;
+  resultHistoryCount: number;
   latestDiagnosis: DiagnosisSession | null;
   featuredTools: Tool[];
 }
@@ -101,4 +105,12 @@ export interface DiagnosisChatResponse extends DiagnosisChatReply {
 export interface ToolsLibraryResponse {
   categories: ToolCategory[];
   tools: Tool[];
+}
+
+export interface ResultsHistoryResponse {
+  items: DiagnosisResultHistoryItem[];
+}
+
+export interface ResultSnapshotDetailResponse {
+  snapshot: ResultSnapshotDetail;
 }

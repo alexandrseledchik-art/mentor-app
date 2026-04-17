@@ -1,6 +1,12 @@
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
+import { getLatestResultSnapshotByCompanyId } from "@/lib/diagnosis/get-latest-result-snapshot";
 import type { Database } from "@/types/db";
-import type { Company, DiagnosisAnswerInput, DiagnosisSession } from "@/types/domain";
+import type {
+  Company,
+  DiagnosisAnswerInput,
+  DiagnosisResultHistoryItem,
+  DiagnosisSession,
+} from "@/types/domain";
 
 import { getActiveDiagnosisSession } from "./get-active-diagnosis";
 import { getCurrentAppUser } from "./get-current-app-user";
@@ -81,6 +87,8 @@ export interface DashboardWorkspaceContext {
   activeCompany: Company | null;
   activeDiagnosis: DiagnosisSession | null;
   lastCompletedDiagnosis: DiagnosisSession | null;
+  latestResultSnapshot: DiagnosisResultHistoryItem | null;
+  resultHistoryCount: number;
 }
 
 export async function getDashboardWorkspaceContext(): Promise<DashboardWorkspaceContext | null> {
@@ -96,9 +104,11 @@ export async function getDashboardWorkspaceContext(): Promise<DashboardWorkspace
   let activeCompany: Company | null = null;
   const activeDiagnosis = await getActiveDiagnosisSession(user.id);
   let lastCompletedDiagnosis: DiagnosisSession | null = null;
+  let latestResultSnapshot: DiagnosisResultHistoryItem | null = null;
+  let resultHistoryCount = 0;
 
   if (workspace.activeCompanyId) {
-    const [{ data: company }, lastCompletedResult] = await Promise.all([
+    const [{ data: company }, lastCompletedResult, latestSnapshot, historyCountResult] = await Promise.all([
       supabase
         .from("companies")
         .select("*")
@@ -111,12 +121,19 @@ export async function getDashboardWorkspaceContext(): Promise<DashboardWorkspace
             .eq("id", workspace.lastCompletedDiagnosisSessionId)
             .maybeSingle()
         : Promise.resolve({ data: null, error: null }),
+      getLatestResultSnapshotByCompanyId(workspace.activeCompanyId),
+      supabase
+        .from("result_snapshots")
+        .select("*", { count: "exact", head: true })
+        .eq("company_id", workspace.activeCompanyId),
     ]);
 
     activeCompany = company ? mapCompany(company as CompanyRow) : null;
     lastCompletedDiagnosis = lastCompletedResult.data
       ? mapDiagnosisSession(lastCompletedResult.data as DiagnosisSessionRow)
       : null;
+    latestResultSnapshot = latestSnapshot;
+    resultHistoryCount = historyCountResult.count ?? 0;
   }
 
   return {
@@ -125,5 +142,7 @@ export async function getDashboardWorkspaceContext(): Promise<DashboardWorkspace
     activeCompany,
     activeDiagnosis,
     lastCompletedDiagnosis,
+    latestResultSnapshot,
+    resultHistoryCount,
   };
 }

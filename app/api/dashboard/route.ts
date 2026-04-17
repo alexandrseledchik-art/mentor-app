@@ -82,6 +82,8 @@ export async function GET() {
     company: dashboardContext.activeCompany,
     activeDiagnosis: dashboardContext.activeDiagnosis,
     lastCompletedDiagnosis: dashboardContext.lastCompletedDiagnosis,
+    latestResultSnapshot: dashboardContext.latestResultSnapshot,
+    resultHistoryCount: dashboardContext.resultHistoryCount,
     latestDiagnosis: dashboardContext.lastCompletedDiagnosis,
     featuredTools: (featuredTools ?? []).map(mapTool),
   };
