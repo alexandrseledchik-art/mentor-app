@@ -9,14 +9,14 @@ export async function sendTelegramMessage(params: {
     label: string;
     url: string;
   };
-}) {
+}) : Promise<boolean> {
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
 
   if (!botToken) {
     console.error("TELEGRAM MESSAGE SEND SKIPPED", {
       reason: "missing_bot_token",
     });
-    return;
+    return false;
   }
 
   const body: Record<string, unknown> = {
@@ -38,17 +38,29 @@ export async function sendTelegramMessage(params: {
   }
 
   try {
-    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+    const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
     });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => "");
+      console.error("TELEGRAM MESSAGE SEND FAILED", {
+        status: response.status,
+        body: errorText || "empty_response",
+      });
+      return false;
+    }
+
+    return true;
   } catch (error) {
     console.error("TELEGRAM MESSAGE SEND FAILED", {
       message: error instanceof Error ? error.message : "unknown_error",
     });
+    return false;
   }
 }
 
@@ -56,7 +68,7 @@ export async function sendTelegramEntryReply(params: {
   chatId: number;
   reply: TelegramEntryReply;
 }) {
-  await sendTelegramMessage({
+  return sendTelegramMessage({
     chatId: params.chatId,
     text: params.reply.text,
     cta: params.reply.cta,
