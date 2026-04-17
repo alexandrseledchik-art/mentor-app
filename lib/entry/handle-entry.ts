@@ -1,6 +1,15 @@
 import "server-only";
 
 import { buildDiagnosisDeepLink, buildToolDeepLink } from "@/lib/entry/deeplink";
+import {
+  trackEntryCompleted,
+  trackEntryDropped,
+  trackEntryModeDetected,
+  trackEntryQuestionAsked,
+  trackEntryRouted,
+  trackEntryStarted,
+  trackEntryToolNotFound,
+} from "@/lib/analytics/entry-analytics";
 import { detectEntryIntent, detectEntryMode, normalizeEntryText } from "@/lib/entry/detection";
 import { buildEntryHypothesis } from "@/lib/entry/hypothesis";
 import { buildTelegramEntryReply } from "@/lib/entry/reply";
@@ -24,6 +33,10 @@ function shouldContinueSession(session: InternalEntrySessionState | null) {
 
   const ageMs = Date.now() - new Date(session.updatedAt).getTime();
   return ageMs <= 1000 * 60 * 60 * 24;
+}
+
+function getSessionAgeHours(session: InternalEntrySessionState) {
+  return Math.max(1, Math.round((Date.now() - new Date(session.updatedAt).getTime()) / (1000 * 60 * 60)));
 }
 
 function buildWorkingText(
@@ -83,11 +96,28 @@ export async function handleTelegramEntry(params: {
   const text = params.text.trim();
   const existingSession = await getEntrySessionByTelegramUserId(params.telegramUserId);
   const continueSession = shouldContinueSession(existingSession);
+
+  if (existingSession && !continueSession && existingSession.stage === "clarifying") {
+    await trackEntryDropped({
+      telegramUserId: params.telegramUserId,
+      previousSession: existingSession,
+      resumedAfterHours: getSessionAgeHours(existingSession),
+    });
+  }
+
   const workingText = buildWorkingText(continueSession ? existingSession : null, text);
   const mode = detectEntryMode(workingText);
   const intent = detectEntryIntent(workingText, mode);
   const hypothesis = mode === "problem_first" ? buildEntryHypothesis(intent) : null;
   const turnCount = continueSession && existingSession ? existingSession.turnCount + 1 : 1;
+
+  if (!continueSession) {
+    await trackEntryStarted({
+      telegramUserId: params.telegramUserId,
+      entryMode: mode,
+      rawText: text,
+    });
+  }
 
   const decisionResult = await decideEntryRouting({
     mode,
@@ -139,6 +169,12 @@ export async function handleTelegramEntry(params: {
     lastQuestionText: normalizedDecision.nextQuestion?.text ?? null,
   } as InternalEntrySessionState);
 
+  await trackEntryModeDetected({
+    telegramUserId: params.telegramUserId,
+    session: persistedSession,
+    intent,
+  });
+
   if (decisionResult.unsupportedToolRequested) {
     const signal = {
       toolQuery: text,
@@ -152,13 +188,49 @@ export async function handleTelegramEntry(params: {
 
     await captureToolDemandSignal(signal);
     void notifyAdminAboutToolDemand(signal);
+    await trackEntryToolNotFound({
+      telegramUserId: params.telegramUserId,
+      session: persistedSession,
+      toolQuery: text,
+      normalizedTool: normalizeEntryText(text) || undefined,
+      detectedIntent: intent.primaryIntent,
+      confidence: decisionResult.toolConfidence ?? "low",
+      alternativeToolSlug: decisionResult.alternativeTool?.slug,
+    });
   }
+
+  if (
+    (normalizedDecision.action === "ask_question" ||
+      normalizedDecision.action === "confirm_tool_then_route") &&
+    normalizedDecision.nextQuestion
+  ) {
+    await trackEntryQuestionAsked({
+      telegramUserId: params.telegramUserId,
+      session: persistedSession,
+      questionKey: normalizedDecision.nextQuestion.key,
+    });
+  }
+
+  await trackEntryRouted({
+    telegramUserId: params.telegramUserId,
+    session: persistedSession,
+    decision: normalizedDecision,
+    intent,
+  });
 
   const reply = buildTelegramEntryReply({
     session: persistedSession,
     decision: normalizedDecision,
     hypothesis,
   });
+
+  if (reply.stage === "ready_for_routing") {
+    await trackEntryCompleted({
+      telegramUserId: params.telegramUserId,
+      session: persistedSession,
+      decision: normalizedDecision,
+    });
+  }
 
   return {
     reply,

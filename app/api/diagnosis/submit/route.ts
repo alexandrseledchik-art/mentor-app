@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { trackDiagnosisCompleted } from "@/lib/analytics/diagnosis-analytics";
 import { parseQuestionOptions } from "@/lib/diagnosis/mappers";
 import { createResultSnapshot } from "@/lib/diagnosis/result-snapshots";
 import {
@@ -436,6 +437,15 @@ export async function POST(request: Request) {
       console.error("RESULT SNAPSHOT CREATE ERROR:", error);
       return NextResponse.json({ error: "Failed to create result snapshot." }, { status: 500 });
     }
+
+    await trackDiagnosisCompleted({
+      userId: finalSessionRow.user_id,
+      companyId: finalSessionRow.company_id,
+      diagnosisSessionId: finalSessionRow.id,
+      summaryKey: summary.key,
+      totalScore,
+      answeredCount,
+    });
   } else {
     const { data: updatedSession, error: sessionUpdateError } = await supabase
       .from("diagnosis_sessions")

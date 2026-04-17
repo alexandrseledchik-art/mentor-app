@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { trackDiagnosisStarted } from "@/lib/analytics/diagnosis-analytics";
 import { parseQuestionOptions } from "@/lib/diagnosis/mappers";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { getCurrentAppUser } from "@/lib/workspace/get-current-app-user";
@@ -414,6 +415,35 @@ export async function POST(request: Request) {
     console.error("DIAGNOSIS START SESSION ERROR:", error);
     return NextResponse.json({ error: "Failed to create diagnosis session." }, { status: 500 });
   }
+
+  const referer = request.headers.get("referer");
+  let source: string | null = null;
+  let entryMode: string | null = null;
+  let entryIntent: string | null = null;
+
+  if (referer) {
+    try {
+      const refererUrl = new URL(referer);
+      source = refererUrl.searchParams.get("source");
+      entryMode = refererUrl.searchParams.get("entry_mode");
+      entryIntent = refererUrl.searchParams.get("entry_intent");
+    } catch {
+      source = null;
+      entryMode = null;
+      entryIntent = null;
+    }
+  }
+
+  await trackDiagnosisStarted({
+    userId: currentAppUser.id,
+    companyId: company.id,
+    diagnosisSessionId: sessionResult.session.id,
+    questionSetId: questionSetResult.questionSet.id,
+    resumed: sessionResult.resumed,
+    source,
+    entryMode,
+    entryIntent,
+  });
 
   const payload: DiagnosisStartResponse = {
     session: sessionResult.session,

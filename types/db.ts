@@ -269,6 +269,42 @@ export interface Database {
           },
         ];
       };
+      analytics_events: {
+        Row: {
+          company_id: string | null;
+          created_at: string;
+          diagnosis_session_id: string | null;
+          entry_session_telegram_user_id: number | null;
+          event_name: string;
+          id: string;
+          payload: Json;
+          telegram_user_id: number | null;
+          user_id: string | null;
+        };
+        Insert: {
+          company_id?: string | null;
+          created_at?: string;
+          diagnosis_session_id?: string | null;
+          entry_session_telegram_user_id?: number | null;
+          event_name: string;
+          id?: string;
+          payload?: Json;
+          telegram_user_id?: number | null;
+          user_id?: string | null;
+        };
+        Update: {
+          company_id?: string | null;
+          created_at?: string;
+          diagnosis_session_id?: string | null;
+          entry_session_telegram_user_id?: number | null;
+          event_name?: string;
+          id?: string;
+          payload?: Json;
+          telegram_user_id?: number | null;
+          user_id?: string | null;
+        };
+        Relationships: [];
+      };
       entry_sessions: {
         Row: {
           clarifying_answers: Json;
