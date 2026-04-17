@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { ScoreCard } from "@/app/diagnosis/[sessionId]/score-card";
+import { ResultAiPanel } from "@/app/components/result-ai-panel";
 import type { ResultSnapshotDetailResponse } from "@/types/api";
 
 function formatSnapshotDate(value: string) {
@@ -94,6 +95,11 @@ export default async function ResultSnapshotPage({
               ))}
             </ul>
           </section>
+
+          <ResultAiPanel
+            summaryUrl={`/api/results/${snapshotId}/ai-summary`}
+            chatUrl={`/api/results/${snapshotId}/ai-chat`}
+          />
 
           <section>
             <div className="action-row">

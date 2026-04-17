@@ -2,6 +2,7 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
+import { ResultAiPanel } from "@/app/components/result-ai-panel";
 import {
   getFallbackMainSummary,
   getFallbackWhyNow,
@@ -148,6 +149,11 @@ export default async function DiagnosisResultPage({
           </section>
 
           <ResultTools tools={data.resultRecommendedTools} />
+
+          <ResultAiPanel
+            summaryUrl={`/api/diagnosis/result/${sessionId}/ai-summary`}
+            chatUrl={`/api/diagnosis/result/${sessionId}/ai-chat`}
+          />
 
           <section>
             <div className="action-row">

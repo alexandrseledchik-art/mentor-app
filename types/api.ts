@@ -13,6 +13,9 @@ import type {
   DiagnosisResultHistoryItem,
   DiagnosisSession,
   ResultSnapshotDetail,
+  AiResultSummaryResponse,
+  AiResultChatRequest,
+  AiResultChatResponse,
   ResultRecommendedTool,
   RecommendedTool,
   Tool,
@@ -114,3 +117,9 @@ export interface ResultsHistoryResponse {
 export interface ResultSnapshotDetailResponse {
   snapshot: ResultSnapshotDetail;
 }
+
+export interface ResultAiSummaryApiResponse extends AiResultSummaryResponse {}
+
+export interface ResultAiChatApiRequest extends AiResultChatRequest {}
+
+export interface ResultAiChatApiResponse extends AiResultChatResponse {}

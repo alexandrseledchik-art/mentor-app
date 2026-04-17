@@ -113,6 +113,23 @@ export const diagnosisResultRecommendedToolSchema = z.object({
   source: z.enum(["hybrid", "deterministic"]),
 });
 
+export const aiResultSummaryResponseSchema = z.object({
+  narrative: z.string().min(1),
+  priorities: z.array(z.string().min(1)).min(2).max(4),
+  risks: z.array(z.string().min(1)).min(2).max(4),
+  strengths: z.array(z.string().min(1)).min(2).max(4),
+  nextSteps: z.array(z.string().min(1)).min(2).max(4),
+});
+
+export const aiResultChatRequestSchema = z.object({
+  question: z.string().trim().min(1).max(2000),
+});
+
+export const aiResultChatResponseSchema = z.object({
+  reply: z.string().trim().min(1),
+  suggestedFollowups: z.array(z.string().trim().min(1)).max(4).optional(),
+});
+
 export const diagnosisSummaryContextSchema = z.object({
   weakestDomains: z.array(z.string().min(1)),
   strongestDomains: z.array(z.string().min(1)),

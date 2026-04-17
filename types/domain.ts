@@ -138,6 +138,65 @@ export interface ResultSnapshotDetail {
   }>;
 }
 
+export interface AiResultInterpretationContext {
+  company: {
+    id: string;
+    name: string;
+    industry?: string | null;
+    teamSize?: string | null;
+    revenueRange?: string | null;
+    primaryGoal?: string | null;
+  };
+  result: {
+    sourceType: "live_result" | "snapshot";
+    sourceId: string;
+    createdAt: string | null;
+    overallScore: number | null;
+    summaryKey: string | null;
+    dimensionScores: DiagnosisDimensionScore[];
+    weakestZones: string[];
+    strongestZones: string[];
+    summary: DiagnosisResultSummary | null;
+    recommendedTools: Array<{
+      title: string;
+      whyRecommended: string;
+    }>;
+  };
+}
+
+export interface AiHistoryInterpretationContext {
+  company: {
+    id: string;
+    name: string;
+  };
+  history: Array<{
+    snapshotId: string;
+    createdAt: string;
+    overallScore: number | null;
+    summaryKey: DiagnosisResultSummary["key"] | null;
+    weakestZones: string[];
+    strongestZones: string[];
+    dimensionScores: DiagnosisDimensionScore[];
+  }>;
+}
+
+export interface AiResultSummaryResponse {
+  narrative: string;
+  priorities: string[];
+  risks: string[];
+  strengths: string[];
+  nextSteps: string[];
+}
+
+export interface AiResultChatRequest {
+  question: string;
+}
+
+export interface AiResultChatResponse {
+  reply: string;
+  suggestedFollowups?: string[];
+}
+
 export interface ToolCategory {
   id: UUID;
   slug: string;
