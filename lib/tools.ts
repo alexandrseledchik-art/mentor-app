@@ -74,3 +74,22 @@ export async function getToolBySlug(slug: string) {
 
   return mapTool(tool);
 }
+
+export async function getToolsCatalogForEntry() {
+  const supabase = getSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("tools")
+    .select("slug, title, summary")
+    .order("is_featured", { ascending: false })
+    .order("title");
+
+  if (error || !data) {
+    return [];
+  }
+
+  return data.map((item) => ({
+    slug: item.slug,
+    title: item.title,
+    summary: item.summary,
+  }));
+}

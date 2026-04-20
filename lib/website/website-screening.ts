@@ -5,7 +5,6 @@ import { completePreliminaryScreening } from "@/lib/cases/complete-preliminary-s
 import { createCase } from "@/lib/cases/create-case";
 import { buildCaseDeepLink } from "@/lib/cases/deeplink";
 import { getActiveCompanyContextForCase } from "@/lib/cases/get-active-company-context";
-import { buildDiagnosisDeepLink } from "@/lib/entry/deeplink";
 import {
   POST_WEBSITE_SCREENING_REQUEST_TEXT,
 } from "@/lib/entry/constants";
@@ -13,7 +12,6 @@ import { getOpenAiModel, getOpenAiNumberEnv } from "@/lib/openai/model-config";
 import { getOrCreateTelegramAppUser } from "@/lib/telegram/app-user";
 import {
   extractWebsiteContextFromText,
-  type WebsiteContext,
 } from "@/lib/website/extract-website-context";
 import type { TelegramEntryReply } from "@/types/domain";
 import { z } from "zod";
@@ -34,7 +32,7 @@ const websiteScreeningResultSchema = z.object({
   cannotConclude: z.array(z.string().trim().min(1)).min(1).max(4),
 });
 
-type WebsiteScreeningResult = z.infer<typeof websiteScreeningResultSchema>;
+export type WebsiteScreeningResult = z.infer<typeof websiteScreeningResultSchema>;
 
 const WEBSITE_SCREENING_JSON_SCHEMA = {
   type: "object",
@@ -115,27 +113,6 @@ function shouldUseRussianFallback(result: WebsiteScreeningResult) {
   return containsTooMuchLatin(combined);
 }
 
-function describeVisibleTheme(context: WebsiteContext | null) {
-  const title = context?.title?.trim();
-  const description = context?.description?.trim();
-  const heading = context?.headings[0]?.trim();
-  const primarySignal = description || heading;
-
-  if (title && !containsTooMuchLatin(title)) {
-    if (primarySignal && !containsTooMuchLatin(primarySignal)) {
-      return `По внешнему виду и тексту сайт позиционируется вокруг темы: ${title}. Видимый смысл: ${primarySignal}.`;
-    }
-
-    return `По внешнему виду и тексту сайт позиционируется вокруг темы: ${title}.`;
-  }
-
-  if (primarySignal && !containsTooMuchLatin(primarySignal)) {
-    return `По внешнему виду и тексту сайт позиционируется вокруг следующего оффера: ${primarySignal}.`;
-  }
-
-  return "По внешнему виду и тексту сайт показывает понятный внешний оффер, но по одной ссылке можно сделать только предварительный внешний скрининг.";
-}
-
 function getStructuredOutput(response: Record<string, unknown>) {
   const outputText = response.output_text;
 
@@ -174,30 +151,6 @@ function getStructuredOutput(response: Record<string, unknown>) {
   }
 
   return null;
-}
-
-function buildFallbackWebsiteScreening(context: WebsiteContext | null): WebsiteScreeningResult {
-  return {
-    observedPositioning: describeVisibleTheme(context),
-    visibleStrengths: [
-      "Пользователь может быстро понять основной оффер по первому экрану.",
-      "Сайт даёт достаточно внешнего контекста для первичного скрининга позиционирования.",
-    ],
-    possibleRiskAreas: [
-      {
-        area: "Доверие к обещанию",
-        whyCheck: "Если обещан быстрый результат, важно показать, на чём основан вывод и где границы уверенности.",
-      },
-      {
-        area: "Следующий шаг после первичного результата",
-        whyCheck: "Стоит проверить, понятно ли пользователю, что делать после получения первого вывода.",
-      },
-    ],
-    cannotConclude: [
-      "Нельзя определить реальное главное ограничение бизнеса только по сайту.",
-      "Нельзя оценить финансы, команду, операционные процессы и управленческий учёт без внутренних данных.",
-    ],
-  };
 }
 
 function formatWebsiteScreeningReply(params: {
@@ -247,7 +200,7 @@ function buildWebsiteScreeningMarkdown(result: WebsiteScreeningResult) {
   ].join("\n\n");
 }
 
-async function persistWebsiteScreening(params: {
+export async function persistTelegramWebsiteScreening(params: {
   telegramUserId: number;
   telegramUsername?: string | null;
   firstName?: string | null;
@@ -313,13 +266,12 @@ async function buildReplyAndPersist(params: {
   lastName?: string | null;
   rawText: string;
   result: WebsiteScreeningResult;
-  fallbackDiagnosisUrl: string;
 }) {
   const previewReply = formatWebsiteScreeningReply({
     result: params.result,
-    caseUrl: params.fallbackDiagnosisUrl,
+    caseUrl: "#",
   });
-  const caseUrl = await persistWebsiteScreening({
+  const caseUrl = await persistTelegramWebsiteScreening({
     telegramUserId: params.telegramUserId,
     telegramUsername: params.telegramUsername,
     firstName: params.firstName,
@@ -335,35 +287,16 @@ async function buildReplyAndPersist(params: {
   });
 }
 
-export async function runTelegramWebsiteScreening(params: {
-  telegramUserId: number;
-  telegramUsername?: string | null;
-  firstName?: string | null;
-  lastName?: string | null;
+export async function generateWebsiteScreeningResult(params: {
   rawText: string;
-  entryMode: string;
-  entryIntent: string;
-}): Promise<TelegramEntryReply> {
+}): Promise<WebsiteScreeningResult> {
   const websiteContext = await extractWebsiteContextFromText(params.rawText);
   const apiKey = process.env.OPENAI_API_KEY;
   const model = getOpenAiModel();
   const temperature = getOpenAiNumberEnv("OPENAI_TEMPERATURE", 0.2);
   const maxOutputTokens = getOpenAiNumberEnv("OPENAI_MAX_TOKENS", 1200);
-  const diagnosisUrl = buildDiagnosisDeepLink({
-    entryMode: params.entryMode,
-    entryIntent: params.entryIntent,
-  });
-
   if (!apiKey) {
-    return buildReplyAndPersist({
-      telegramUserId: params.telegramUserId,
-      telegramUsername: params.telegramUsername,
-      firstName: params.firstName,
-      lastName: params.lastName,
-      rawText: params.rawText,
-      result: buildFallbackWebsiteScreening(websiteContext),
-      fallbackDiagnosisUrl: diagnosisUrl,
-    });
+    throw new Error("Website screening is unavailable because OPENAI_API_KEY is missing.");
   }
 
   try {
@@ -412,15 +345,7 @@ export async function runTelegramWebsiteScreening(params: {
       console.error("WEBSITE_SCREENING_LLM_HTTP_ERROR", {
         status: response.status,
       });
-      return buildReplyAndPersist({
-        telegramUserId: params.telegramUserId,
-        telegramUsername: params.telegramUsername,
-        firstName: params.firstName,
-        lastName: params.lastName,
-        rawText: params.rawText,
-        result: buildFallbackWebsiteScreening(websiteContext),
-        fallbackDiagnosisUrl: diagnosisUrl,
-      });
+      throw new Error(`Website screening HTTP error: ${response.status}`);
     }
 
     const payload = (await response.json()) as Record<string, unknown>;
@@ -428,53 +353,42 @@ export async function runTelegramWebsiteScreening(params: {
 
     if (!output) {
       console.error("WEBSITE_SCREENING_EMPTY_OUTPUT");
-      return buildReplyAndPersist({
-        telegramUserId: params.telegramUserId,
-        telegramUsername: params.telegramUsername,
-        firstName: params.firstName,
-        lastName: params.lastName,
-        rawText: params.rawText,
-        result: buildFallbackWebsiteScreening(websiteContext),
-        fallbackDiagnosisUrl: diagnosisUrl,
-      });
+      throw new Error("Website screening returned empty output.");
     }
 
     const parsed = websiteScreeningResultSchema.parse(JSON.parse(output));
 
     if (shouldUseRussianFallback(parsed)) {
       console.warn("WEBSITE_SCREENING_NON_RUSSIAN_OUTPUT");
-      return buildReplyAndPersist({
-        telegramUserId: params.telegramUserId,
-        telegramUsername: params.telegramUsername,
-        firstName: params.firstName,
-        lastName: params.lastName,
-        rawText: params.rawText,
-        result: buildFallbackWebsiteScreening(websiteContext),
-        fallbackDiagnosisUrl: diagnosisUrl,
-      });
+      throw new Error("Website screening returned non-Russian output.");
     }
 
-    return buildReplyAndPersist({
-      telegramUserId: params.telegramUserId,
-      telegramUsername: params.telegramUsername,
-      firstName: params.firstName,
-      lastName: params.lastName,
-      rawText: params.rawText,
-      result: parsed,
-      fallbackDiagnosisUrl: diagnosisUrl,
-    });
+    return parsed;
   } catch (error) {
     console.error("WEBSITE_SCREENING_FAILED", {
       message: error instanceof Error ? error.message : "unknown_error",
     });
-    return buildReplyAndPersist({
-      telegramUserId: params.telegramUserId,
-      telegramUsername: params.telegramUsername,
-      firstName: params.firstName,
-      lastName: params.lastName,
-      rawText: params.rawText,
-      result: buildFallbackWebsiteScreening(websiteContext),
-      fallbackDiagnosisUrl: diagnosisUrl,
-    });
+    throw error instanceof Error ? error : new Error("Website screening failed.");
   }
+}
+
+export async function runTelegramWebsiteScreening(params: {
+  telegramUserId: number;
+  telegramUsername?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  rawText: string;
+}): Promise<TelegramEntryReply> {
+  const result = await generateWebsiteScreeningResult({
+    rawText: params.rawText,
+  });
+
+  return buildReplyAndPersist({
+    telegramUserId: params.telegramUserId,
+    telegramUsername: params.telegramUsername,
+    firstName: params.firstName,
+    lastName: params.lastName,
+    rawText: params.rawText,
+    result,
+  });
 }

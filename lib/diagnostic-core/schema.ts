@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-import { quickScanResultSchema } from "@/lib/quick-scan/schema";
-
 export const causeContourSchema = z.enum([
   "market",
   "strategy",
@@ -31,7 +29,6 @@ export const diagnosticInputSchema = z.object({
     })
     .nullable()
     .optional(),
-  quickScan: quickScanResultSchema.nullable().optional(),
   clarifyingAnswers: z
     .array(
       z.object({

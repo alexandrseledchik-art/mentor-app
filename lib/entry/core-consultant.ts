@@ -1,255 +1,94 @@
 import { z } from "zod";
 
-import { isCapabilityQuestion } from "@/lib/entry/capability-questions";
-import { getOpenAiModel, getOpenAiNumberEnv } from "@/lib/openai/model-config";
-import { hasUrl, stripUrls } from "@/lib/url-utils";
+import { runDiagnosticCore } from "@/lib/diagnostic-core/run-diagnostic-core";
+import type { DiagnosticStructuredResult } from "@/lib/diagnostic-core/schema";
+import { runAskQuestionGenerator } from "@/lib/entry/question-generator";
+import { runReplyRenderer } from "@/lib/entry/reply-renderer";
+import { runEntryRouter } from "@/lib/entry/router";
+import { runToolNavigationResolver } from "@/lib/entry/tool-navigation";
+import { getToolsCatalogForEntry } from "@/lib/tools";
+import {
+  extractWebsiteContextFromText,
+} from "@/lib/website/extract-website-context";
+import {
+  generateWebsiteScreeningResult,
+  type WebsiteScreeningResult,
+} from "@/lib/website/website-screening";
 import type { EntrySessionState } from "@/types/domain";
 
-const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
-
 const coreEntryConsultantSchema = z.object({
-  mode: z.enum([
+  action: z.enum([
     "capability",
     "website_screening",
     "tool_navigation",
     "ask_question",
-    "diagnostic_intake",
     "diagnostic_result",
   ]),
   confidence: z.enum(["low", "medium", "high"]),
-  understanding: z.string().trim().min(1),
-  question: z.string().trim().min(1).nullable().optional(),
   rationale: z.string().trim().min(1),
+  replyText: z.string().trim().min(1),
+  question: z.string().trim().min(1).nullable(),
+  toolSlug: z.string().trim().min(1).nullable(),
+  toolTitle: z.string().trim().min(1).nullable(),
+  websiteScreening: z
+    .object({
+      observedPositioning: z.string().trim().min(1),
+      visibleStrengths: z.array(z.string().trim().min(1)).min(1).max(4),
+      possibleRiskAreas: z
+        .array(
+          z.object({
+            area: z.string().trim().min(1),
+            whyCheck: z.string().trim().min(1),
+          }),
+        )
+        .min(1)
+        .max(5),
+      cannotConclude: z.array(z.string().trim().min(1)).min(1).max(4),
+    })
+    .nullable(),
+  diagnosticResult: z.any().nullable(),
 });
 
-type CoreEntryConsultantResponse = z.infer<typeof coreEntryConsultantSchema>;
+type CoreEntryConsultantResponse = Omit<
+  z.infer<typeof coreEntryConsultantSchema>,
+  "diagnosticResult"
+> & {
+  diagnosticResult: DiagnosticStructuredResult | null;
+};
 
-const CORE_ENTRY_CONSULTANT_JSON_SCHEMA = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    mode: {
-      type: "string",
-      enum: [
-        "capability",
-        "website_screening",
-        "tool_navigation",
-        "ask_question",
-        "diagnostic_intake",
-        "diagnostic_result",
-      ],
-    },
-    confidence: {
-      type: "string",
-      enum: ["low", "medium", "high"],
-    },
-    understanding: { type: "string" },
-    question: { type: ["string", "null"] },
-    rationale: { type: "string" },
-  },
-  required: ["mode", "confidence", "understanding", "rationale"],
-} as const;
-
-const CORE_ENTRY_CONSULTANT_PROMPT = `Ты — независимый senior business consultant и бизнес-диагност.
-
-Твоя задача на входе Telegram — не строить сложный state machine, а честно понять запрос и выбрать ОДИН лучший следующий шаг.
-
-Ты должен решить, какой это режим:
-- capability: пользователь спрашивает о возможностях бота, а не просит разбирать бизнес
-- website_screening: пользователь дал только ссылку или почти только ссылку, поэтому можно сделать только внешний скрининг
-- tool_navigation: пользователь явно просит инструмент или способ решения, и следующий шаг — подобрать/открыть инструмент
-- ask_question: данных пока мало, и нужен один лучший уточняющий вопрос
-- diagnostic_intake: сигнала уже хватает для короткого intake-разбора, но ещё рано делать полноценный диагностический вывод
-- diagnostic_result: сигнала уже хватает для короткого предварительного диагноза в Telegram
-
-Правила:
-- отвечай только на русском
-- не придумывай факты
-- если это capability-вопрос, не запускай диагностику
-- если это только URL без бизнес-контекста, не делай диагноз бизнеса
-- если данных мало, задай один лучший вопрос, который уменьшит неопределённость
-- если данные уже достаточно сильные, можно идти в diagnostic_result
-- не используй menu-style вопросы ради шаблона; вопрос должен помогать понять цель, симптом или развести гипотезы
-- будь плотным, спокойным и консультативным
-
-Верни строго JSON по схеме.`;
-
-function getStructuredOutput(response: Record<string, unknown>) {
-  const outputText = response.output_text;
-
-  if (typeof outputText === "string" && outputText.trim().length > 0) {
-    return outputText;
-  }
-
-  const output = response.output;
-
-  if (!Array.isArray(output)) {
-    return null;
-  }
-
-  for (const item of output) {
-    if (!item || typeof item !== "object") {
-      continue;
-    }
-
-    const content = (item as { content?: unknown }).content;
-
-    if (!Array.isArray(content)) {
-      continue;
-    }
-
-    for (const part of content) {
-      if (!part || typeof part !== "object") {
-        continue;
-      }
-
-      const text = (part as { text?: unknown }).text;
-
-      if (typeof text === "string" && text.trim().length > 0) {
-        return text;
-      }
-    }
-  }
-
-  return null;
-}
-
-function normalize(text: string) {
-  return text
-    .toLowerCase()
-    .replace(/ё/g, "е")
-    .replace(/[^\p{L}\p{N}\s?]+/gu, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function countSignals(text: string) {
-  const normalized = normalize(stripUrls(text));
-  const markers = [
-    "продажи",
-    "лиды",
-    "конверс",
-    "хаос",
-    "собственник",
-    "прозрач",
-    "касс",
-    "маржа",
-    "прибыль",
-    "процесс",
-    "команд",
-    "не покупают",
-    "сделк",
-    "неупак",
-    "оценк",
-    "ручн",
-  ];
-
-  return markers.filter((marker) => normalized.includes(marker)).length;
-}
-
-function buildFallbackQuestion(rawText: string) {
-  const normalized = normalize(stripUrls(rawText));
-
-  if (normalized.includes("продать бизнес")) {
-    return "Чтобы продолжить по делу, уточните в 1–2 фразах: что сейчас сильнее всего мешает продаже — непрозрачные цифры, зависимость от собственника, нестабильные продажи или неупакованность бизнеса для сделки?";
-  }
-
-  if (normalized.includes("продажи") || normalized.includes("лиды") || normalized.includes("конверс")) {
-    return "Чтобы не перепутать симптом с причиной, уточните в 1–2 фразах: сейчас сильнее всего проседают лиды, конверсия, сам оффер или исполнение продаж?";
-  }
-
-  return "Чтобы продолжить разбор по делу, уточните в 1–2 фразах: какого результата вы хотите и что сейчас сильнее всего этому мешает?";
-}
-
-function looksLikeToolRequest(text: string) {
-  const normalized = normalize(text);
-
-  return [
-    "инструмент",
-    "шаблон",
-    "матрица",
-    "чеклист",
-    "raci",
-    "swot",
-    "kpi",
-    "okr",
-    "юнит экономика",
-    "юнит экономик",
-    "воронка",
-    "cash gap",
-  ].some((marker) => normalized.includes(marker));
-}
-
-function buildFallbackResponse(params: {
-  rawText: string;
-  session: EntrySessionState | null;
-}): CoreEntryConsultantResponse {
-  const trimmed = params.rawText.trim();
-  const normalized = normalize(trimmed);
-  const onlyUrl = hasUrl(trimmed) && stripUrls(trimmed).trim().length === 0;
-  const signalCount = countSignals(trimmed);
-  const clarifyingCount = params.session?.clarifyingAnswers.length ?? 0;
-  const activeUnknown = params.session?.activeUnknown;
-
-  if (isCapabilityQuestion(trimmed)) {
-    return {
-      mode: "capability",
-      confidence: "high",
-      understanding: "Понял, это вопрос о возможностях бота, а не запрос на бизнес-разбор.",
-      rationale: "Для capability-вопроса не нужен диагностический маршрут.",
-    };
-  }
-
-  if (onlyUrl) {
-    return {
-      mode: "website_screening",
-      confidence: "medium",
-      understanding: "Вижу, что вы прислали только ссылку. По одной ссылке честно можно сделать только внешний скрининг сайта, оффера и пути пользователя.",
-      rationale: "URL без бизнес-контекста не даёт основания для внутреннего диагноза бизнеса.",
-    };
-  }
-
-  if (looksLikeToolRequest(trimmed)) {
-    return {
-      mode: "tool_navigation",
-      confidence: "medium",
-      understanding: "Похоже, вы уже ищете не общий разбор, а конкретный инструмент или ближайший способ решения.",
-      rationale: "На таком входе лучше сначала подобрать точный инструмент, а не запускать общий диагностический маршрут.",
-    };
-  }
+function buildCapabilityPayload(rawText: string) {
+  const normalized = rawText.toLowerCase();
 
   if (
-    signalCount >= 3 &&
-    clarifyingCount >= 1 &&
-    activeUnknown !== "goal" &&
-    activeUnknown !== "main_symptom" &&
-    activeUnknown !== "hypothesis_split"
+    /голос|аудио|voice|audio|речь|надиктов/.test(normalized)
   ) {
     return {
-      mode: "diagnostic_result",
-      confidence: "medium",
-      understanding: "Сигнала уже хватает для короткого предварительного диагноза в Telegram.",
-      rationale: "Есть понятная цель или контекст запроса и уже достаточно симптомов, чтобы перейти от intake к предварительному ограничению.",
+      topic: "voice",
+      answer:
+        "Бот принимает голосовые сообщения, расшифровывает их и продолжает разбор уже по смыслу запроса.",
     };
   }
 
-  if (signalCount >= 2) {
+  if (/картин|скрин|изображен|фото|таблиц/.test(normalized)) {
     return {
-      mode: "diagnostic_intake",
-      confidence: "medium",
-      understanding: "Сигнала уже хватает для короткого intake-разбора, но ещё рано делать жёсткий диагностический вывод.",
-      rationale: "Есть опорные сигналы по ситуации, но они ещё требуют аккуратной сборки в диагностическую рамку.",
+      topic: "image",
+      answer:
+        "Бот может принять изображение, извлечь из него видимый контекст и использовать его в разборе.",
+    };
+  }
+
+  if (/сайт|url|ссылк/.test(normalized)) {
+    return {
+      topic: "website",
+      answer:
+        "Бот может сделать внешний скрининг сайта, а если вы добавите контекст боли или цели — перейти к диагностике.",
     };
   }
 
   return {
-    mode: "ask_question",
-    confidence: "low",
-    understanding: normalized.length > 0
-      ? "Понял общий вектор запроса, но пока данных недостаточно для честного вывода."
-      : "Пока не вижу самого запроса.",
-    question: buildFallbackQuestion(trimmed),
-    rationale: "На этом этапе один уточняющий вопрос даст больше пользы, чем преждевременный разбор.",
+    topic: "general",
+    answer:
+      "Бот помогает разбирать бизнес-ситуации в чате: может понять запрос, задать один лучший вопрос, сделать внешний скрининг сайта или провести диагностический разбор.",
   };
 }
 
@@ -257,86 +96,124 @@ export async function runCoreEntryConsultant(params: {
   rawText: string;
   session: EntrySessionState | null;
 }) {
-  const apiKey = process.env.OPENAI_API_KEY;
-  const model = getOpenAiModel();
-  const temperature = getOpenAiNumberEnv("OPENAI_TEMPERATURE", 0.2);
-  const maxOutputTokens = getOpenAiNumberEnv("OPENAI_MAX_TOKENS", 700);
-
-  const input = {
+  const routerDecision = await runEntryRouter({
     rawText: params.rawText,
-    session: params.session
+    session: params.session,
+  });
+
+  let question: string | null = null;
+  let toolSlug: string | null = null;
+  let toolTitle: string | null = null;
+  let websiteScreening: WebsiteScreeningResult | null = null;
+  let diagnosticResult: DiagnosticStructuredResult | null = null;
+
+  if (routerDecision.action === "ask_question") {
+    const nextQuestion = await runAskQuestionGenerator({
+      rawText: params.rawText,
+      session: params.session,
+      routerReason: routerDecision.routerReason,
+    });
+    question = nextQuestion.question;
+  }
+
+  if (routerDecision.action === "tool_navigation") {
+    const toolResult = await runToolNavigationResolver({
+      rawText: params.rawText,
+      toolsCatalog: await getToolsCatalogForEntry(),
+    });
+
+    if (toolResult.toolSlug && toolResult.toolTitle) {
+      toolSlug = toolResult.toolSlug;
+      toolTitle = toolResult.toolTitle;
+    } else {
+      const nextQuestion = await runAskQuestionGenerator({
+        rawText: params.rawText,
+        session: params.session,
+        routerReason:
+          "Пользователь, похоже, просит инструмент, но точного совпадения пока нет. Нужно уточнить задачу.",
+      });
+
+      const rendered = await runReplyRenderer({
+        action: "ask_question",
+        rawText: params.rawText,
+        routerReason: routerDecision.routerReason,
+        question: {
+          text: nextQuestion.question,
+          whyThisQuestion: nextQuestion.whyThisQuestion,
+        },
+      });
+
+      return coreEntryConsultantSchema.parse({
+        action: "ask_question",
+        confidence: "medium",
+        rationale: toolResult.reason,
+        replyText: rendered.replyText,
+        question: nextQuestion.question,
+        toolSlug: null,
+        toolTitle: null,
+        websiteScreening: null,
+        diagnosticResult: null,
+      }) as CoreEntryConsultantResponse;
+    }
+  }
+
+  if (routerDecision.action === "website_screening") {
+    websiteScreening = await generateWebsiteScreeningResult({
+      rawText: params.rawText,
+    });
+  }
+
+  if (routerDecision.action === "diagnostic_result") {
+    const websiteContext = await extractWebsiteContextFromText(params.rawText);
+    diagnosticResult = await runDiagnosticCore({
+      userMessage: params.rawText,
+      clarifyingAnswers: (params.session?.clarifyingAnswers ?? []).map((answer) => ({
+        question: answer.questionText,
+        answer: answer.answerText,
+      })),
+      knownFacts: [
+        ...(websiteContext?.title ? [`Заголовок сайта: ${websiteContext.title}`] : []),
+        ...(websiteContext?.description ? [`Описание сайта: ${websiteContext.description}`] : []),
+        ...((websiteContext?.headings ?? [])
+          .slice(0, 3)
+          .map((heading) => `Заголовок раздела сайта: ${heading}`)),
+      ],
+    });
+  }
+
+  const reply = await runReplyRenderer({
+    action: toolSlug && toolTitle ? "tool_navigation" : routerDecision.action,
+    rawText: params.rawText,
+    routerReason: routerDecision.routerReason,
+    question: question
       ? {
-          stage: params.session.stage,
-          initialMessage: params.session.initialMessage,
-          clarifyingAnswers: params.session.clarifyingAnswers.slice(-3),
-          conversationFrame: params.session.conversationFrame,
-          activeUnknown: params.session.activeUnknown,
-          turnCount: params.session.turnCount,
+          text: question,
+          whyThisQuestion: routerDecision.routerReason,
         }
       : null,
-  };
+    tool:
+      toolSlug && toolTitle
+        ? {
+            slug: toolSlug,
+            title: toolTitle,
+            reason: routerDecision.routerReason,
+          }
+        : null,
+    websiteScreening,
+    diagnosticResult,
+  });
 
-  if (!apiKey) {
-    return buildFallbackResponse(params);
-  }
-
-  try {
-    const response = await fetch(OPENAI_RESPONSES_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        temperature,
-        max_output_tokens: maxOutputTokens,
-        input: [
-          {
-            role: "system",
-            content: CORE_ENTRY_CONSULTANT_PROMPT,
-          },
-          {
-            role: "user",
-            content: JSON.stringify(input, null, 2),
-          },
-        ],
-        metadata: {
-          feature: "entry_core_consultant",
-        },
-        text: {
-          format: {
-            type: "json_schema",
-            name: "core_entry_consultant",
-            strict: true,
-            schema: CORE_ENTRY_CONSULTANT_JSON_SCHEMA,
-          },
-        },
-      }),
-    });
-
-    if (!response.ok) {
-      console.error("ENTRY_CORE_CONSULTANT_HTTP_ERROR", {
-        status: response.status,
-      });
-      return buildFallbackResponse(params);
-    }
-
-    const payload = (await response.json()) as Record<string, unknown>;
-    const text = getStructuredOutput(payload);
-
-    if (!text) {
-      console.error("ENTRY_CORE_CONSULTANT_EMPTY_OUTPUT");
-      return buildFallbackResponse(params);
-    }
-
-    return coreEntryConsultantSchema.parse(JSON.parse(text));
-  } catch (error) {
-    console.error("ENTRY_CORE_CONSULTANT_FALLBACK", {
-      message: error instanceof Error ? error.message : "unknown_error",
-    });
-    return buildFallbackResponse(params);
-  }
+  return coreEntryConsultantSchema.parse({
+    action: toolSlug && toolTitle ? "tool_navigation" : routerDecision.action,
+    confidence: routerDecision.confidence,
+    rationale: routerDecision.routerReason,
+    replyText: reply.replyText,
+    question,
+    toolSlug,
+    toolTitle,
+    websiteScreening,
+    diagnosticResult,
+  }) as CoreEntryConsultantResponse;
 }
 
 export type { CoreEntryConsultantResponse };

@@ -1,44 +1,31 @@
 import "server-only";
 
-import { buildDiagnosisDeepLink, buildToolDeepLink } from "@/lib/entry/deeplink";
+import { buildToolDeepLink } from "@/lib/entry/deeplink";
 import {
   POST_WEBSITE_SCREENING_REQUEST_KEY,
   POST_WEBSITE_SCREENING_REQUEST_TEXT,
 } from "@/lib/entry/constants";
-import { buildConversationFrame } from "@/lib/entry/conversation-frame";
 import { runCoreEntryConsultant } from "@/lib/entry/core-consultant";
 import {
   trackEntryCompleted,
   trackEntryDropped,
-  trackEntryModeDetected,
   trackEntryQuestionAsked,
   trackEntryRouted,
   trackEntryStarted,
-  trackEntryToolNotFound,
 } from "@/lib/analytics/entry-analytics";
-import { buildCapabilityReply, isCapabilityQuestion } from "@/lib/entry/capability-questions";
-import { detectEntryIntent, detectEntryMode, normalizeEntryText } from "@/lib/entry/detection";
-import { hasEnoughSignalForTelegramDiagnostic } from "@/lib/entry/diagnostic-threshold";
-import { buildEntryHypothesis } from "@/lib/entry/hypothesis";
-import { buildTelegramEntryReply } from "@/lib/entry/reply";
-import { runTelegramDiagnosticCase } from "@/lib/telegram/diagnostic-case";
-import { runTelegramDiagnosticIntake } from "@/lib/telegram/diagnostic-intake";
-import {
-  matchToolFromText,
-  suggestClosestAlternativeTool,
-} from "@/lib/entry/tool-matching";
-import { runTelegramWebsiteScreening } from "@/lib/website/website-screening";
+import { persistTelegramDiagnosticCase } from "@/lib/telegram/diagnostic-case";
+import { persistTelegramWebsiteScreening } from "@/lib/website/website-screening";
 import {
   getEntrySessionByTelegramUserId,
   upsertEntrySession,
   type InternalEntrySessionState,
 } from "@/lib/entry/session-state";
-import {
-  captureToolDemandSignal,
-  notifyAdminAboutToolDemand,
-} from "@/lib/entry/tool-demand-signal";
 import type { TelegramEntryResponse } from "@/types/api";
-import type { EntryRoutingDecision } from "@/types/domain";
+import type {
+  EntryMode,
+  EntryRoutingDecision,
+  TelegramEntryReply,
+} from "@/types/domain";
 
 function shouldContinueSession(session: InternalEntrySessionState | null) {
   if (!session || session.stage !== "clarifying") {
@@ -51,41 +38,6 @@ function shouldContinueSession(session: InternalEntrySessionState | null) {
 
 function getSessionAgeHours(session: InternalEntrySessionState) {
   return Math.max(1, Math.round((Date.now() - new Date(session.updatedAt).getTime()) / (1000 * 60 * 60)));
-}
-
-function normalize(text: string) {
-  return text
-    .toLowerCase()
-    .replace(/ё/g, "е")
-    .replace(/[^\p{L}\p{N}\s?]+/gu, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function isCapabilityFollowup(
-  session: InternalEntrySessionState | null,
-  text: string,
-) {
-  if (!session) {
-    return false;
-  }
-
-  const previousText = [session.initialMessage, ...session.clarifyingAnswers.map((item) => item.answerText)]
-    .filter(Boolean)
-    .join("\n");
-
-  if (!isCapabilityQuestion(previousText)) {
-    return false;
-  }
-
-  const normalized = normalize(text);
-  return (
-    normalized.includes("ответишь") ||
-    normalized.includes("на мои вопрос") ||
-    normalized.includes("на мой вопрос") ||
-    normalized.includes("ответь") ||
-    normalized.includes("я спросил")
-  );
 }
 
 function buildWorkingText(
@@ -109,10 +61,24 @@ function buildWorkingText(
     .join("\n");
 }
 
+function buildSessionMode(
+  action: "capability" | "website_screening" | "tool_navigation" | "ask_question" | "diagnostic_result",
+): EntryMode {
+  if (action === "tool_navigation") {
+    return "tool_discovery";
+  }
+
+  if (action === "capability") {
+    return "unclear";
+  }
+
+  return "problem_first";
+}
+
 function normalizeDecision(decision: EntryRoutingDecision, params: {
   mode: string;
   intent: string;
-  toolSlug?: string;
+  toolSlug?: string | null;
 }): EntryRoutingDecision {
   if (decision.action === "route_to_tool" && decision.toolSuggestion) {
     return {
@@ -123,57 +89,48 @@ function normalizeDecision(decision: EntryRoutingDecision, params: {
       },
     };
   }
-
-  if (decision.action === "route_to_diagnosis") {
-    return {
-      ...decision,
-      toolSuggestion: {
-        slug: "diagnosis",
-        title: "Диагностика",
-        url: buildDiagnosisDeepLink({
-          entryMode: params.mode,
-          entryIntent: params.intent,
-          suggestedTool: params.toolSlug,
-        }),
-      },
-    };
-  }
-
   return decision;
 }
 
-function buildCoreQuestionReply(params: {
-  understanding: string;
-  question?: string | null;
-}) {
-  return {
-    text: [params.understanding, params.question].filter(Boolean).join("\n\n"),
-    stage: params.question ? ("clarifying" as const) : ("ready_for_routing" as const),
-  };
-}
-
 function mapCoreModeToDecision(params: {
-  coreMode: "capability" | "website_screening" | "tool_navigation" | "ask_question" | "diagnostic_intake" | "diagnostic_result";
-  understanding: string;
+  action: "capability" | "website_screening" | "tool_navigation" | "ask_question" | "diagnostic_result";
+  rationale: string;
   question?: string | null;
+  toolSlug?: string | null;
+  toolTitle?: string | null;
   mode: string;
   intent: string;
 }) {
-  if (params.coreMode === "website_screening") {
+  if (params.action === "website_screening") {
     return normalizeDecision(
       {
         action: "route_to_website_screening",
-        reason: params.understanding,
+        reason: params.rationale,
       },
       params,
     );
   }
 
-  if (params.coreMode === "diagnostic_intake" || params.coreMode === "diagnostic_result") {
+  if (params.action === "diagnostic_result") {
     return normalizeDecision(
       {
         action: "route_to_diagnosis",
-        reason: params.understanding,
+        reason: params.rationale,
+      },
+      params,
+    );
+  }
+
+  if (params.action === "tool_navigation" && params.toolSlug && params.toolTitle) {
+    return normalizeDecision(
+      {
+        action: "route_to_tool",
+        toolSuggestion: {
+          slug: params.toolSlug,
+          title: params.toolTitle,
+          url: buildToolDeepLink(params.toolSlug),
+        },
+        reason: params.rationale,
       },
       params,
     );
@@ -187,7 +144,7 @@ function mapCoreModeToDecision(params: {
           text: params.question,
         }
       : undefined,
-    reason: params.understanding,
+    reason: params.rationale,
   };
 }
 
@@ -202,51 +159,6 @@ export async function handleTelegramEntry(params: {
   const existingSession = await getEntrySessionByTelegramUserId(params.telegramUserId);
   const continueSession = shouldContinueSession(existingSession);
 
-  if (isCapabilityQuestion(text) || isCapabilityFollowup(continueSession ? existingSession : null, text)) {
-    const mode = "unclear";
-    const intent = detectEntryIntent(text, mode);
-    const now = new Date().toISOString();
-    const session = await upsertEntrySession({
-      telegramUserId: params.telegramUserId,
-      stage: "ready_for_routing",
-      entryMode: mode,
-      initialMessage:
-        continueSession && existingSession
-          ? existingSession.initialMessage
-          : text,
-      detectedIntent: intent,
-      toolConfidence: undefined,
-      conversationFrame: existingSession?.conversationFrame ?? {
-        goalHypotheses: [],
-        symptomHints: [],
-        currentDiagnosticFocus: null,
-      },
-      activeUnknown: "request",
-      clarifyingAnswers: existingSession?.clarifyingAnswers ?? [],
-      turnCount: continueSession && existingSession ? existingSession.turnCount + 1 : 1,
-      createdAt: existingSession?.createdAt ?? now,
-      updatedAt: now,
-      lastQuestionKey: null,
-      lastQuestionText: null,
-    } as InternalEntrySessionState);
-
-    const capabilitySourceText =
-      isCapabilityQuestion(text) || !existingSession
-        ? text
-        : existingSession.initialMessage;
-
-    return {
-      reply: buildCapabilityReply(capabilitySourceText),
-      session,
-      intent,
-      hypothesis: null,
-      decision: {
-        action: "ask_question",
-        reason: "Пользователь задал вопрос о возможностях бота, а не запрос на бизнес-диагностику.",
-      },
-    };
-  }
-
   if (existingSession && !continueSession && existingSession.stage === "clarifying") {
     await trackEntryDropped({
       telegramUserId: params.telegramUserId,
@@ -256,16 +168,12 @@ export async function handleTelegramEntry(params: {
   }
 
   const workingText = buildWorkingText(continueSession ? existingSession : null, text);
-  const mode = detectEntryMode(workingText);
-  const intent = detectEntryIntent(workingText, mode);
-  const hypothesis = mode === "problem_first" ? buildEntryHypothesis(intent) : null;
-  const turnCount = continueSession && existingSession ? existingSession.turnCount + 1 : 1;
-  const frameState = buildConversationFrame({
-    mode,
-    intent,
+  const coreDecision = await runCoreEntryConsultant({
     rawText: workingText,
     session: continueSession ? existingSession : null,
   });
+  const mode = buildSessionMode(coreDecision.action);
+  const turnCount = continueSession && existingSession ? existingSession.turnCount + 1 : 1;
 
   if (!continueSession) {
     await trackEntryStarted({
@@ -275,78 +183,17 @@ export async function handleTelegramEntry(params: {
     });
   }
 
-  const useLegacyToolRouting = mode === "tool_discovery" || mode === "specific_tool_request";
-  const coreDecision = await runCoreEntryConsultant({
-    rawText: workingText,
-    session: continueSession ? existingSession : null,
-  });
-
   let normalizedDecision: EntryRoutingDecision;
-  let toolRoutingContext: {
-    unsupportedToolRequested?: boolean;
-    alternativeToolSlug?: string;
-    toolConfidence?: "low" | "medium" | "high";
-  } | null = null;
 
   normalizedDecision = mapCoreModeToDecision({
-    coreMode: coreDecision.mode,
-    understanding: coreDecision.understanding,
+    action: coreDecision.action,
+    rationale: coreDecision.rationale,
     question: coreDecision.question ?? null,
+    toolSlug: coreDecision.toolSlug ?? null,
+    toolTitle: coreDecision.toolTitle ?? null,
     mode,
-    intent: intent.primaryIntent,
+    intent: "unclear",
   });
-
-  if (coreDecision.mode === "tool_navigation" || useLegacyToolRouting) {
-    const matchedTool = await matchToolFromText(workingText, mode, intent);
-    const alternativeTool = matchedTool.tool
-      ? null
-      : await suggestClosestAlternativeTool(workingText, intent);
-
-    toolRoutingContext = {
-      unsupportedToolRequested: !matchedTool.tool,
-      alternativeToolSlug: alternativeTool?.slug,
-      toolConfidence: matchedTool.confidence,
-    };
-
-    if (matchedTool.tool && matchedTool.confidence !== "low") {
-      normalizedDecision = normalizeDecision(
-        {
-          action: "route_to_tool",
-          toolSuggestion: {
-            slug: matchedTool.tool.slug,
-            title: matchedTool.tool.title,
-            url: buildToolDeepLink(matchedTool.tool.slug),
-          },
-          reason: coreDecision.understanding,
-        },
-        {
-          mode,
-          intent: intent.primaryIntent,
-          toolSlug: matchedTool.tool.slug,
-        },
-      );
-    } else if (alternativeTool) {
-      normalizedDecision = {
-        action: "ask_question",
-        nextQuestion: {
-          key: "tool_alternative_question",
-          text: `Точного инструмента по этому запросу у нас нет. Ближайший вариант — «${alternativeTool.title}». Если хотите, напишите, какую задачу нужно решить, и я уточню маршрут.`,
-        },
-        reason: "Нужен ещё один шаг навигации, чтобы не показать случайный инструмент.",
-      };
-    } else {
-      normalizedDecision = normalizeDecision(
-        {
-          action: "route_to_diagnosis",
-          reason: "По текущему описанию безопаснее начать с короткой диагностики, чем угадывать инструмент.",
-        },
-        {
-          mode,
-          intent: intent.primaryIntent,
-        },
-      );
-    }
-  }
 
   const clarifyingAnswers =
     continueSession && existingSession && existingSession.lastQuestionKey && existingSession.lastQuestionText
@@ -360,32 +207,29 @@ export async function handleTelegramEntry(params: {
         ]
       : [];
 
-  const diagnosticThresholdReached = hasEnoughSignalForTelegramDiagnostic({
-    mode,
-    intent,
-    rawText: workingText,
-    turnCount,
-    session: continueSession ? existingSession : null,
-    conversationFrame: frameState.conversationFrame,
-    activeUnknown: frameState.activeUnknown,
-  });
-
   const isWebsiteScreening = normalizedDecision.action === "route_to_website_screening";
+  const isCapabilityDecision = coreDecision.action === "capability";
 
   let persistedSession = await upsertEntrySession({
     telegramUserId: params.telegramUserId,
     stage:
-      isWebsiteScreening ||
-      normalizedDecision.action === "ask_question" ||
-      normalizedDecision.action === "confirm_tool_then_route"
-        ? "clarifying"
-        : "ready_for_routing",
+      isCapabilityDecision
+        ? "ready_for_routing"
+        : isWebsiteScreening ||
+            normalizedDecision.action === "ask_question" ||
+            normalizedDecision.action === "confirm_tool_then_route"
+          ? "clarifying"
+          : "ready_for_routing",
     entryMode: mode,
     initialMessage: continueSession && existingSession ? existingSession.initialMessage : text,
-    detectedIntent: intent,
-    toolConfidence: toolRoutingContext?.toolConfidence,
-    conversationFrame: frameState.conversationFrame,
-    activeUnknown: frameState.activeUnknown,
+    detectedIntent: null,
+    toolConfidence: undefined,
+    conversationFrame: {
+      goalHypotheses: [],
+      symptomHints: [],
+      currentDiagnosticFocus: null,
+    },
+    activeUnknown: null,
     clarifyingAnswers,
     turnCount,
     createdAt: existingSession?.createdAt ?? new Date().toISOString(),
@@ -399,36 +243,6 @@ export async function handleTelegramEntry(params: {
         ? POST_WEBSITE_SCREENING_REQUEST_TEXT
         : normalizedDecision.nextQuestion?.text ?? null,
   } as InternalEntrySessionState);
-
-  await trackEntryModeDetected({
-    telegramUserId: params.telegramUserId,
-    session: persistedSession,
-    intent,
-  });
-
-  if (toolRoutingContext?.unsupportedToolRequested) {
-    const signal = {
-      toolQuery: text,
-      normalizedTool: normalizeEntryText(text) || undefined,
-      entryMode: mode,
-      detectedIntent: intent.primaryIntent,
-      confidence: toolRoutingContext.toolConfidence ?? "low",
-      telegramUserId: params.telegramUserId,
-      createdAt: new Date().toISOString(),
-    } as const;
-
-    await captureToolDemandSignal(signal);
-    void notifyAdminAboutToolDemand(signal);
-    await trackEntryToolNotFound({
-      telegramUserId: params.telegramUserId,
-      session: persistedSession,
-      toolQuery: text,
-      normalizedTool: normalizeEntryText(text) || undefined,
-      detectedIntent: intent.primaryIntent,
-      confidence: toolRoutingContext.toolConfidence ?? "low",
-      alternativeToolSlug: toolRoutingContext.alternativeToolSlug,
-    });
-  }
 
   if (
     ((normalizedDecision.action === "ask_question" ||
@@ -450,73 +264,64 @@ export async function handleTelegramEntry(params: {
     telegramUserId: params.telegramUserId,
     session: persistedSession,
     decision: normalizedDecision,
-    intent,
+    intent: null,
   });
 
-  let reply =
-    (coreDecision.mode === "capability" || normalizedDecision.action === "ask_question")
-      ? buildCoreQuestionReply({
-          understanding: coreDecision.understanding,
-          question:
-            normalizedDecision.action === "ask_question"
-              ? normalizedDecision.nextQuestion?.text ?? coreDecision.question ?? null
-              : coreDecision.question ?? null,
-        })
-      : buildTelegramEntryReply({
-          session: persistedSession,
-          decision: normalizedDecision,
-          hypothesis,
-        });
+  let reply: TelegramEntryReply = {
+    text: coreDecision.replyText,
+    stage:
+      normalizedDecision.action === "ask_question" || isWebsiteScreening
+        ? "clarifying"
+        : "ready_for_routing",
+  };
 
   if (normalizedDecision.action === "route_to_website_screening") {
-    reply = await runTelegramWebsiteScreening({
+    if (!coreDecision.websiteScreening) {
+      throw new Error("Unified consultant selected website_screening without screening payload.");
+    }
+
+    const caseUrl = await persistTelegramWebsiteScreening({
       telegramUserId: params.telegramUserId,
       telegramUsername: params.telegramUsername,
       firstName: params.firstName,
       lastName: params.lastName,
       rawText: workingText,
-      entryMode: mode,
-      entryIntent: intent.primaryIntent,
+      result: coreDecision.websiteScreening,
+      replyText: coreDecision.replyText,
     });
+    reply = {
+      text: coreDecision.replyText,
+      cta: {
+        label: "Открыть сохранённый скрининг",
+        url: caseUrl,
+      },
+      stage: "clarifying",
+    };
+  } else if (normalizedDecision.action === "route_to_tool" && normalizedDecision.toolSuggestion) {
+    reply = {
+      text: coreDecision.replyText,
+      cta: {
+        label: "Открыть инструмент",
+        url: normalizedDecision.toolSuggestion.url,
+      },
+      stage: "ready_for_routing",
+    };
   } else if (normalizedDecision.action === "route_to_diagnosis") {
-    try {
-      if (coreDecision.mode === "diagnostic_result") {
-        reply = await runTelegramDiagnosticCase({
-          telegramUserId: params.telegramUserId,
-          telegramUsername: params.telegramUsername,
-          firstName: params.firstName,
-          lastName: params.lastName,
-          workingText,
-          session: persistedSession,
-          intent,
-        });
-      } else if (diagnosticThresholdReached) {
-        reply = await runTelegramDiagnosticCase({
-          telegramUserId: params.telegramUserId,
-          telegramUsername: params.telegramUsername,
-          firstName: params.firstName,
-          lastName: params.lastName,
-          workingText,
-          session: persistedSession,
-          intent,
-        });
-      } else {
-        reply = await runTelegramDiagnosticIntake({
-          telegramUserId: params.telegramUserId,
-          telegramUsername: params.telegramUsername,
-          firstName: params.firstName,
-          lastName: params.lastName,
-          workingText,
-          session: persistedSession,
-          intent,
-        });
-      }
-    } catch (error) {
-      console.error("TELEGRAM_DIAGNOSTIC_CASE_FAILED", {
-        telegramUserId: params.telegramUserId,
-        message: error instanceof Error ? error.message : "unknown_error",
-      });
+    if (!coreDecision.diagnosticResult) {
+      throw new Error("Unified consultant selected diagnostic_result without structured result.");
     }
+
+    reply = await persistTelegramDiagnosticCase({
+      telegramUserId: params.telegramUserId,
+      telegramUsername: params.telegramUsername,
+      firstName: params.firstName,
+      lastName: params.lastName,
+      workingText,
+      session: persistedSession,
+      intent: null,
+      result: coreDecision.diagnosticResult,
+      replyText: coreDecision.replyText,
+    });
   }
 
   if (reply.stage === "ready_for_routing") {
@@ -530,8 +335,8 @@ export async function handleTelegramEntry(params: {
   return {
     reply,
     session: persistedSession,
-    intent,
-    hypothesis,
+    intent: null,
+    hypothesis: null,
     decision: normalizedDecision,
   };
 }

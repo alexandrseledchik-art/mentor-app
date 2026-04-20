@@ -10,7 +10,6 @@ import {
   type DiagnosticInput,
   type DiagnosticStructuredResult,
 } from "./schema";
-import { buildDiagnosticFallback } from "./fallback";
 
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
 
@@ -86,7 +85,7 @@ export async function runDiagnosticCore(
   const maxOutputTokens = getOpenAiNumberEnv("OPENAI_MAX_TOKENS", 2600);
 
   if (!apiKey) {
-    return buildDiagnosticFallback(parsedInput);
+    throw new Error("Diagnostic core is unavailable because OPENAI_API_KEY is missing.");
   }
 
   try {
@@ -128,7 +127,7 @@ export async function runDiagnosticCore(
       console.error("DIAGNOSTIC_CORE_LLM_HTTP_ERROR", {
         status: response.status,
       });
-      return buildDiagnosticFallback(parsedInput);
+      throw new Error(`Diagnostic core HTTP error: ${response.status}`);
     }
 
     const payload = (await response.json()) as Record<string, unknown>;
@@ -136,15 +135,15 @@ export async function runDiagnosticCore(
 
     if (!text) {
       console.error("DIAGNOSTIC_CORE_EMPTY_OUTPUT");
-      return buildDiagnosticFallback(parsedInput);
+      throw new Error("Diagnostic core returned empty output.");
     }
 
     const raw = JSON.parse(text) as unknown;
     return postProcessDiagnosticResult(diagnosticStructuredResultSchema.parse(raw));
   } catch (error) {
-    console.error("DIAGNOSTIC_CORE_FALLBACK", {
+    console.error("DIAGNOSTIC_CORE_FAILED", {
       message: error instanceof Error ? error.message : "unknown_error",
     });
-    return buildDiagnosticFallback(parsedInput);
+    throw error instanceof Error ? error : new Error("Diagnostic core failed.");
   }
 }

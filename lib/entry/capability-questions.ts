@@ -13,8 +13,34 @@ function includesAny(text: string, items: string[]) {
   return items.some((item) => text.includes(item));
 }
 
+function countWords(text: string) {
+  return text.split(/\s+/).filter(Boolean).length;
+}
+
 export function isCapabilityQuestion(text: string) {
   const normalized = normalize(text);
+  const hasVoiceSignal = includesAny(normalized, [
+    "голосов",
+    "голосовые",
+    "голосовыми",
+    "аудио",
+    "voice",
+    "audio",
+    "речь",
+    "надиктов",
+  ]);
+  const businessMarkers = [
+    "бизнес",
+    "продаж",
+    "лид",
+    "конверс",
+    "маржа",
+    "прибыль",
+    "команд",
+    "процесс",
+    "хаос",
+    "касс",
+  ];
 
   const asksAboutBotAbility =
     includesAny(normalized, [
@@ -27,6 +53,8 @@ export function isCapabilityQuestion(text: string) {
       "ты принимаешь",
       "принимаешь голосовые",
       "голосовые принимаешь",
+      "голосовыми принимаешь",
+      "голосовыми у тебя",
       "ты обрабатываешь",
       "обрабатываешь голосовые",
       "голосовые обрабатываешь",
@@ -38,29 +66,30 @@ export function isCapabilityQuestion(text: string) {
       "понимает ли бот",
       "умеет ли бот",
     ]) || normalized.endsWith("?");
+  const brokenVoiceCapabilityPhrase =
+    hasVoiceSignal &&
+    countWords(normalized) <= 6 &&
+    !includesAny(normalized, businessMarkers);
 
-  const asksAboutVoice =
-    includesAny(normalized, [
-      "голосов",
-      "голосовые",
-      "аудио",
-      "voice",
-      "audio",
-      "речь",
-      "надиктов",
-    ]);
-
-  return asksAboutBotAbility && asksAboutVoice;
+  return hasVoiceSignal && (asksAboutBotAbility || brokenVoiceCapabilityPhrase);
 }
 
 export function buildCapabilityReply(text: string): TelegramEntryReply {
   const normalized = normalize(text);
-  const isVoiceQuestion = includesAny(normalized, ["голосов", "голосовые", "аудио", "voice", "audio", "речь"]);
+  const isVoiceQuestion = includesAny(normalized, [
+    "голосов",
+    "голосовые",
+    "голосовыми",
+    "аудио",
+    "voice",
+    "audio",
+    "речь",
+  ]);
 
   if (isVoiceQuestion) {
     return {
       text: [
-        "Да, я понимаю голосовые сообщения.",
+        "Да, сейчас я принимаю и понимаю голосовые сообщения.",
         "Вы можете отправить голосовое, а я распознаю его и отвечу уже по смыслу вашего запроса.",
         "Сначала я пойму сам запрос, а уже потом поведу вас в скрининг, диагностику или к нужному следующему шагу.",
         "Если хотите, просто следующим сообщением опишите голосом ситуацию в бизнесе: что происходит, что не работает и какой результат вам нужен.",

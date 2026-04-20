@@ -46,7 +46,6 @@ export function buildDiagnosticFallback(input: DiagnosticInput): DiagnosticStruc
   const lead = getLeadArea(input);
   const hasWeakInput = input.userMessage.trim().length < 50;
   const symptom = input.userMessage.trim();
-  const quickConstraint = input.quickScan?.constraintVersions[0]?.constraint;
 
   return {
     goal: {
@@ -106,14 +105,14 @@ export function buildDiagnosticFallback(input: DiagnosticInput): DiagnosticStruc
       facts: [`Клиент сообщил: «${symptom}».`],
       interpretations: [`Запрос указывает на возможную проблему в зоне «${lead.area}».`],
       workingHypotheses: [
-        quickConstraint ?? `Главное ограничение может быть связано с контуром «${lead.area}».`,
+        `Главное ограничение может быть связано с контуром «${lead.area}».`,
       ],
       weakHypotheses: [
         "Проблема может быть следствием недостатка данных, ролей или управленческого ритма.",
       ],
     },
     constraints: {
-      main: quickConstraint ?? `Неподтверждённое ограничение в контуре «${lead.area}»`,
+      main: `Неподтверждённое ограничение в контуре «${lead.area}»`,
       secondary: "Недостаточная прозрачность данных для уверенного выбора первого шага",
       tertiary: null,
       competingVersions: [

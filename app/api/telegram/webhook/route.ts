@@ -12,6 +12,10 @@ import {
   getTelegramAudioAttachment,
   transcribeTelegramAudio,
 } from "@/lib/telegram/voice";
+import {
+  analyzeTelegramImage,
+  getTelegramImageAttachment,
+} from "@/lib/telegram/image";
 
 type TelegramWebhookUpdate = {
   message?: {
@@ -29,6 +33,19 @@ type TelegramWebhookUpdate = {
       file_size?: number;
       file_name?: string;
     };
+    photo?: Array<{
+      file_id?: string;
+      file_size?: number;
+      width?: number;
+      height?: number;
+    }>;
+    document?: {
+      file_id?: string;
+      mime_type?: string;
+      file_name?: string;
+      file_size?: number;
+    };
+    caption?: string;
     chat?: { id?: number };
     from?: {
       id?: number;
@@ -62,7 +79,7 @@ export async function POST(request: Request) {
     const body = (await request.json().catch(() => null)) as TelegramWebhookUpdate | null;
     const message = body?.message;
     const messageFrom = message?.from;
-    let text = message?.text?.trim();
+    let text = message?.text?.trim() ?? message?.caption?.trim();
     chatId = message?.chat?.id;
     telegramUserId = messageFrom?.id;
 
@@ -72,6 +89,7 @@ export async function POST(request: Request) {
 
     if (!text && message) {
       const audioAttachment = getTelegramAudioAttachment(message);
+      const imageAttachment = getTelegramImageAttachment(message);
 
       if (audioAttachment) {
         await sendTelegramChatAction({
@@ -92,6 +110,42 @@ export async function POST(request: Request) {
             ok: true,
             processed: true,
             stage: "voice_transcription_failed",
+          });
+        }
+      } else if (imageAttachment) {
+        await sendTelegramChatAction({
+          chatId,
+          action: "typing",
+        });
+
+        try {
+          const imageContext = await analyzeTelegramImage({
+            attachment: imageAttachment,
+            caption: message.caption ?? null,
+          });
+
+          text = [
+            message.caption?.trim() || null,
+            "Пользователь прислал изображение. Видимый контекст:",
+            imageContext,
+          ]
+            .filter(Boolean)
+            .join("\n\n");
+        } catch (error) {
+          console.error("TELEGRAM IMAGE ANALYSIS FAILED", {
+            message: error instanceof Error ? error.message : "unknown_error",
+          });
+
+          await sendTelegramMessage({
+            chatId,
+            text:
+              "Не удалось обработать изображение. Попробуйте отправить ещё раз, добавьте короткое описание текстом или дождитесь, пока мы починим обработку модели.",
+          });
+
+          return NextResponse.json({
+            ok: true,
+            processed: true,
+            stage: "image_analysis_failed",
           });
         }
       }
