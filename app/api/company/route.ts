@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { SESSION_USER_COOKIE } from "@/lib/session";
+import { getCurrentUserId, SESSION_USER_COOKIE } from "@/lib/session";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { getOrCreateWorkspace } from "@/lib/workspace/get-or-create-workspace";
 import { setActiveCompany } from "@/lib/workspace/set-active-company";
@@ -37,55 +37,79 @@ export async function POST(request: Request) {
 
     const supabase = getSupabaseAdminClient();
     const { name, industry, team_size, monthly_revenue_range, goal } = parsed.data;
-    const timestamp = Date.now();
-    const email = `onboarding_${timestamp}@example.local`;
-    const password = `TempPass123!${timestamp}`;
-    const telegramUserId = timestamp * 1000 + Math.floor(Math.random() * 1000);
+    const currentUserId = await getCurrentUserId();
+    let createdAuthUserId: string | null = null;
+    let appUser: { id: string } | null = null;
 
-    const { data: authData, error: userError } = await supabase.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-    });
-    const authUser = authData.user;
+    if (currentUserId) {
+      const { data: existingUser, error: existingUserError } = await supabase
+        .from("users")
+        .select("id")
+        .eq("id", currentUserId)
+        .maybeSingle();
 
-    if (userError || !authUser) {
-      console.error("USER ERROR FULL:", JSON.stringify(userError, null, 2));
+      if (existingUserError) {
+        console.error("CURRENT APP USER ERROR FULL:", JSON.stringify(existingUserError, null, 2));
+      }
 
-      return NextResponse.json(
-        {
-          error: userError?.message || "Ошибка создания пользователя",
-          details: userError,
-        },
-        { status: 500 },
-      );
+      appUser = existingUser;
     }
 
-    const { data: appUser, error: appUserError } = await supabase
-      .from("users")
-      .insert({
-        id: authUser.id,
-        telegram_user_id: telegramUserId,
-        telegram_username: null,
-        first_name: "User",
-        last_name: null,
-      })
-      .select("id")
-      .single();
+    if (!appUser) {
+      const timestamp = Date.now();
+      const email = `onboarding_${timestamp}@example.local`;
+      const password = `TempPass123!${timestamp}`;
+      const telegramUserId = timestamp * 1000 + Math.floor(Math.random() * 1000);
 
-    if (appUserError || !appUser) {
-      console.error("APP USER ERROR FULL:", JSON.stringify(appUserError, null, 2));
-      await supabase.auth.admin.deleteUser(authUser.id).catch((cleanupError) => {
-        console.error("APP USER CLEANUP ERROR:", cleanupError);
+      const { data: authData, error: userError } = await supabase.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
       });
+      const authUser = authData.user;
 
-      return NextResponse.json(
-        {
-          error: appUserError?.message || "Ошибка создания профиля пользователя",
-          details: appUserError,
-        },
-        { status: 500 },
-      );
+      if (userError || !authUser) {
+        console.error("USER ERROR FULL:", JSON.stringify(userError, null, 2));
+
+        return NextResponse.json(
+          {
+            error: userError?.message || "Ошибка создания пользователя",
+            details: userError,
+          },
+          { status: 500 },
+        );
+      }
+
+      createdAuthUserId = authUser.id;
+
+      const { data: createdAppUser, error: appUserError } = await supabase
+        .from("users")
+        .insert({
+          id: authUser.id,
+          telegram_user_id: telegramUserId,
+          telegram_username: null,
+          first_name: "User",
+          last_name: null,
+        })
+        .select("id")
+        .single();
+
+      if (appUserError || !createdAppUser) {
+        console.error("APP USER ERROR FULL:", JSON.stringify(appUserError, null, 2));
+        await supabase.auth.admin.deleteUser(authUser.id).catch((cleanupError) => {
+          console.error("APP USER CLEANUP ERROR:", cleanupError);
+        });
+
+        return NextResponse.json(
+          {
+            error: appUserError?.message || "Ошибка создания профиля пользователя",
+            details: appUserError,
+          },
+          { status: 500 },
+        );
+      }
+
+      appUser = createdAppUser;
     }
 
     let companyInsert = await supabase
@@ -123,22 +147,24 @@ export async function POST(request: Request) {
 
     if (companyError || !company) {
       console.error("COMPANY ERROR FULL:", JSON.stringify(companyError, null, 2));
-      try {
-        const { error: cleanupError } = await supabase
-          .from("users")
-          .delete()
-          .eq("id", appUser.id);
+      if (createdAuthUserId) {
+        try {
+          const { error: cleanupError } = await supabase
+            .from("users")
+            .delete()
+            .eq("id", appUser.id);
 
-        if (cleanupError) {
+          if (cleanupError) {
+            console.error("COMPANY APP USER CLEANUP ERROR:", cleanupError);
+          }
+        } catch (cleanupError) {
           console.error("COMPANY APP USER CLEANUP ERROR:", cleanupError);
         }
-      } catch (cleanupError) {
-        console.error("COMPANY APP USER CLEANUP ERROR:", cleanupError);
-      }
 
-      await supabase.auth.admin.deleteUser(authUser.id).catch((cleanupError) => {
-        console.error("COMPANY AUTH USER CLEANUP ERROR:", cleanupError);
-      });
+        await supabase.auth.admin.deleteUser(createdAuthUserId).catch((cleanupError) => {
+          console.error("COMPANY AUTH USER CLEANUP ERROR:", cleanupError);
+        });
+      }
 
       return NextResponse.json(
         {
@@ -149,7 +175,7 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log("ONBOARDING USER CREATED:", authUser.id);
+    console.log("ONBOARDING USER READY:", appUser.id);
     console.log("ONBOARDING COMPANY CREATED:", {
       companyId: company.id,
       companyUserId: appUser.id,

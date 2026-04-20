@@ -2,6 +2,8 @@ import "./globals.css";
 
 import type { ReactNode } from "react";
 
+import { TelegramAuthBridge } from "@/app/components/telegram-auth-bridge";
+
 export const metadata = {
   title: "Business Diagnosis Mini App",
   description: "MVP v0.1 for business diagnosis",
@@ -10,7 +12,10 @@ export const metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="ru">
-      <body>{children}</body>
+      <body>
+        <TelegramAuthBridge />
+        {children}
+      </body>
     </html>
   );
 }
