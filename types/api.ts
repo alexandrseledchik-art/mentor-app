@@ -21,8 +21,6 @@ import type {
   ResultRecommendedToolItem,
   ToolNavigationContext,
   AiToolExplanationResponse,
-  EntryHypothesis,
-  EntryIntent,
   EntryRoutingDecision,
   EntrySessionState,
   TelegramEntryReply,
@@ -71,7 +69,7 @@ export interface DiagnosisStartRequest {
   companyId?: string;
   questionSetCode?: string;
   intakeContext?: {
-    source?: "telegram_diagnostic_intake";
+    source?: "telegram_entry";
     goal?: string | null;
     symptoms?: string[];
   };
@@ -82,7 +80,7 @@ export interface DiagnosisStartResponse {
   questionSet: DiagnosisQuestionSet;
   questions: DiagnosisQuestion[];
   intakeContext?: {
-    source: "telegram_diagnostic_intake";
+    source: "telegram_entry";
     goal: string | null;
     symptoms: string[];
   } | null;
@@ -168,7 +166,5 @@ export interface TelegramEntryRequest {
 export interface TelegramEntryResponse {
   reply: TelegramEntryReply;
   session: EntrySessionState;
-  intent: EntryIntent | null;
-  hypothesis: EntryHypothesis | null;
   decision: EntryRoutingDecision;
 }

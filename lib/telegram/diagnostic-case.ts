@@ -11,7 +11,7 @@ import { getOrCreateTelegramAppUser } from "@/lib/telegram/app-user";
 import {
   extractWebsiteContextFromText,
 } from "@/lib/website/extract-website-context";
-import type { EntryIntent, EntrySessionState, TelegramEntryReply } from "@/types/domain";
+import type { EntrySessionState, TelegramEntryReply } from "@/types/domain";
 
 function formatList(items: string[], limit: number) {
   return items
@@ -70,7 +70,6 @@ export async function persistTelegramDiagnosticCase(params: {
   lastName?: string | null;
   workingText: string;
   session: EntrySessionState;
-  intent: EntryIntent | null;
   result: DiagnosticStructuredResult;
   replyText?: string | null;
 }): Promise<TelegramEntryReply> {
@@ -97,8 +96,6 @@ export async function persistTelegramDiagnosticCase(params: {
     text: params.workingText,
     metadata: {
       telegramUserId: params.telegramUserId,
-      entryMode: params.session.entryMode,
-      entryIntent: params.intent?.primaryIntent ?? null,
       turnCount: params.session.turnCount,
     },
   });
@@ -138,7 +135,6 @@ export async function runTelegramDiagnosticCase(params: {
   lastName?: string | null;
   workingText: string;
   session: EntrySessionState;
-  intent: EntryIntent | null;
 }): Promise<TelegramEntryReply> {
   const user = await getOrCreateTelegramAppUser({
     telegramUserId: params.telegramUserId,
@@ -163,8 +159,6 @@ export async function runTelegramDiagnosticCase(params: {
     text: params.workingText,
     metadata: {
       telegramUserId: params.telegramUserId,
-      entryMode: params.session.entryMode,
-      entryIntent: params.intent?.primaryIntent ?? null,
       turnCount: params.session.turnCount,
     },
   });

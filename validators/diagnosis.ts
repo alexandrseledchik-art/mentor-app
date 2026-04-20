@@ -61,7 +61,7 @@ export const diagnosisStartRequestSchema = z.object({
   questionSetCode: z.string().min(1).default("express_v1").optional(),
   intakeContext: z
     .object({
-      source: z.literal("telegram_diagnostic_intake").optional(),
+      source: z.literal("telegram_entry").optional(),
       goal: z.string().trim().min(1).nullable().optional(),
       symptoms: z.array(z.string().trim().min(1)).max(4).optional(),
     })
@@ -79,7 +79,7 @@ export const diagnosisStartResponseSchema = z.object({
   questions: z.array(diagnosisQuestionSchema),
   intakeContext: z
     .object({
-      source: z.literal("telegram_diagnostic_intake"),
+      source: z.literal("telegram_entry"),
       goal: z.string().trim().min(1).nullable(),
       symptoms: z.array(z.string().trim().min(1)).max(4),
     })
@@ -160,37 +160,10 @@ export const aiToolExplanationResponseSchema = z.object({
   expectedOutcome: z.string().trim().min(1),
 });
 
-export const entryIntentSchema = z.object({
-  rawText: z.string().trim().min(1),
-  primaryIntent: z.enum([
-    "growth_problem",
-    "sales_problem",
-    "team_problem",
-    "management_problem",
-    "finance_problem",
-    "operations_problem",
-    "tool_request",
-    "unclear",
-  ]),
-  possibleDomains: z.array(z.string().trim().min(1)).max(4),
-  confidence: z.enum(["low", "medium", "high"]),
-});
-
-export const entryConversationFrameSchema = z.object({
-  goalHypotheses: z.array(z.string().trim().min(1)).max(4),
-  symptomHints: z.array(z.string().trim().min(1)).max(6),
-  currentDiagnosticFocus: z.string().trim().min(1).nullable(),
-});
-
 export const entrySessionStateSchema = z.object({
   telegramUserId: z.number().int().positive(),
   stage: z.enum(["initial", "clarifying", "ready_for_routing"]),
-  entryMode: z.enum(["problem_first", "tool_discovery", "specific_tool_request", "unclear"]),
   initialMessage: z.string().trim().min(1),
-  detectedIntent: entryIntentSchema.nullable(),
-  toolConfidence: z.enum(["low", "medium", "high"]).optional(),
-  conversationFrame: entryConversationFrameSchema,
-  activeUnknown: z.string().trim().min(1).nullable(),
   clarifyingAnswers: z.array(
     z.object({
       questionKey: z.string().trim().min(1),
@@ -203,15 +176,10 @@ export const entrySessionStateSchema = z.object({
   updatedAt: z.string().min(1),
 });
 
-export const entryHypothesisSchema = z.object({
-  summary: z.string().trim().min(1),
-  likelyAreas: z.array(z.string().trim().min(1)).min(1).max(4),
-  uncertaintyNote: z.string().trim().min(1),
-});
-
 export const entryRoutingDecisionSchema = z.object({
   action: z.enum([
     "ask_question",
+    "route_to_website_screening",
     "route_to_diagnosis",
     "route_to_tool",
     "confirm_tool_then_route",

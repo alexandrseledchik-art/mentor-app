@@ -56,42 +56,6 @@ type CoreEntryConsultantResponse = Omit<
   diagnosticResult: DiagnosticStructuredResult | null;
 };
 
-function buildCapabilityPayload(rawText: string) {
-  const normalized = rawText.toLowerCase();
-
-  if (
-    /голос|аудио|voice|audio|речь|надиктов/.test(normalized)
-  ) {
-    return {
-      topic: "voice",
-      answer:
-        "Бот принимает голосовые сообщения, расшифровывает их и продолжает разбор уже по смыслу запроса.",
-    };
-  }
-
-  if (/картин|скрин|изображен|фото|таблиц/.test(normalized)) {
-    return {
-      topic: "image",
-      answer:
-        "Бот может принять изображение, извлечь из него видимый контекст и использовать его в разборе.",
-    };
-  }
-
-  if (/сайт|url|ссылк/.test(normalized)) {
-    return {
-      topic: "website",
-      answer:
-        "Бот может сделать внешний скрининг сайта, а если вы добавите контекст боли или цели — перейти к диагностике.",
-    };
-  }
-
-  return {
-    topic: "general",
-    answer:
-      "Бот помогает разбирать бизнес-ситуации в чате: может понять запрос, задать один лучший вопрос, сделать внешний скрининг сайта или провести диагностический разбор.",
-  };
-}
-
 export async function runCoreEntryConsultant(params: {
   rawText: string;
   session: EntrySessionState | null;

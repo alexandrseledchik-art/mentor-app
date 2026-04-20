@@ -37,20 +37,11 @@ export async function markEntryOfferShown(telegramUserId: number) {
   return upsertEntrySession({
     telegramUserId,
     stage: "initial",
-    entryMode: "unclear",
     initialMessage: "__entry_offer__",
-    detectedIntent: null,
-    conversationFrame: {
-      goalHypotheses: [],
-      symptomHints: [],
-      currentDiagnosticFocus: null,
-    },
-    activeUnknown: null,
     clarifyingAnswers: [],
     turnCount: 1,
     createdAt: now,
     updatedAt: now,
-    toolConfidence: undefined,
     lastQuestionKey: null,
     lastQuestionText: null,
   } as InternalEntrySessionState);

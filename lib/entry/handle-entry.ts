@@ -21,11 +21,7 @@ import {
   type InternalEntrySessionState,
 } from "@/lib/entry/session-state";
 import type { TelegramEntryResponse } from "@/types/api";
-import type {
-  EntryMode,
-  EntryRoutingDecision,
-  TelegramEntryReply,
-} from "@/types/domain";
+import type { EntryRoutingDecision, TelegramEntryReply } from "@/types/domain";
 
 function shouldContinueSession(session: InternalEntrySessionState | null) {
   if (!session || session.stage !== "clarifying") {
@@ -61,23 +57,7 @@ function buildWorkingText(
     .join("\n");
 }
 
-function buildSessionMode(
-  action: "capability" | "website_screening" | "tool_navigation" | "ask_question" | "diagnostic_result",
-): EntryMode {
-  if (action === "tool_navigation") {
-    return "tool_discovery";
-  }
-
-  if (action === "capability") {
-    return "unclear";
-  }
-
-  return "problem_first";
-}
-
 function normalizeDecision(decision: EntryRoutingDecision, params: {
-  mode: string;
-  intent: string;
   toolSlug?: string | null;
 }): EntryRoutingDecision {
   if (decision.action === "route_to_tool" && decision.toolSuggestion) {
@@ -98,8 +78,6 @@ function mapCoreModeToDecision(params: {
   question?: string | null;
   toolSlug?: string | null;
   toolTitle?: string | null;
-  mode: string;
-  intent: string;
 }) {
   if (params.action === "website_screening") {
     return normalizeDecision(
@@ -172,13 +150,11 @@ export async function handleTelegramEntry(params: {
     rawText: workingText,
     session: continueSession ? existingSession : null,
   });
-  const mode = buildSessionMode(coreDecision.action);
   const turnCount = continueSession && existingSession ? existingSession.turnCount + 1 : 1;
 
   if (!continueSession) {
     await trackEntryStarted({
       telegramUserId: params.telegramUserId,
-      entryMode: mode,
       rawText: text,
     });
   }
@@ -191,8 +167,6 @@ export async function handleTelegramEntry(params: {
     question: coreDecision.question ?? null,
     toolSlug: coreDecision.toolSlug ?? null,
     toolTitle: coreDecision.toolTitle ?? null,
-    mode,
-    intent: "unclear",
   });
 
   const clarifyingAnswers =
@@ -220,16 +194,7 @@ export async function handleTelegramEntry(params: {
             normalizedDecision.action === "confirm_tool_then_route"
           ? "clarifying"
           : "ready_for_routing",
-    entryMode: mode,
     initialMessage: continueSession && existingSession ? existingSession.initialMessage : text,
-    detectedIntent: null,
-    toolConfidence: undefined,
-    conversationFrame: {
-      goalHypotheses: [],
-      symptomHints: [],
-      currentDiagnosticFocus: null,
-    },
-    activeUnknown: null,
     clarifyingAnswers,
     turnCount,
     createdAt: existingSession?.createdAt ?? new Date().toISOString(),
@@ -264,7 +229,6 @@ export async function handleTelegramEntry(params: {
     telegramUserId: params.telegramUserId,
     session: persistedSession,
     decision: normalizedDecision,
-    intent: null,
   });
 
   let reply: TelegramEntryReply = {
@@ -280,7 +244,7 @@ export async function handleTelegramEntry(params: {
       throw new Error("Unified consultant selected website_screening without screening payload.");
     }
 
-    const caseUrl = await persistTelegramWebsiteScreening({
+    await persistTelegramWebsiteScreening({
       telegramUserId: params.telegramUserId,
       telegramUsername: params.telegramUsername,
       firstName: params.firstName,
@@ -291,10 +255,6 @@ export async function handleTelegramEntry(params: {
     });
     reply = {
       text: coreDecision.replyText,
-      cta: {
-        label: "Открыть сохранённый скрининг",
-        url: caseUrl,
-      },
       stage: "clarifying",
     };
   } else if (normalizedDecision.action === "route_to_tool" && normalizedDecision.toolSuggestion) {
@@ -318,7 +278,6 @@ export async function handleTelegramEntry(params: {
       lastName: params.lastName,
       workingText,
       session: persistedSession,
-      intent: null,
       result: coreDecision.diagnosticResult,
       replyText: coreDecision.replyText,
     });
@@ -335,8 +294,6 @@ export async function handleTelegramEntry(params: {
   return {
     reply,
     session: persistedSession,
-    intent: null,
-    hypothesis: null,
     decision: normalizedDecision,
   };
 }

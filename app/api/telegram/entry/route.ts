@@ -3,8 +3,6 @@ import { NextResponse } from "next/server";
 import { handleTelegramEntry } from "@/lib/entry/handle-entry";
 import type { TelegramEntryResponse } from "@/types/api";
 import {
-  entryHypothesisSchema,
-  entryIntentSchema,
   entryRoutingDecisionSchema,
   entrySessionStateSchema,
   telegramEntryReplySchema,
@@ -32,8 +30,6 @@ export async function POST(request: Request) {
   const payload: TelegramEntryResponse = {
     reply: telegramEntryReplySchema.parse(result.reply),
     session: entrySessionStateSchema.parse(result.session),
-    intent: result.intent ? entryIntentSchema.parse(result.intent) : null,
-    hypothesis: result.hypothesis ? entryHypothesisSchema.parse(result.hypothesis) : null,
     decision: entryRoutingDecisionSchema.parse(result.decision),
   };
 

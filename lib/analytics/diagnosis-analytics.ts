@@ -9,8 +9,6 @@ export async function trackDiagnosisStarted(params: {
   questionSetId: string;
   resumed: boolean;
   source?: string | null;
-  entryMode?: string | null;
-  entryIntent?: string | null;
 }) {
   await trackEvent({
     event: "diagnosis_started",
@@ -22,8 +20,6 @@ export async function trackDiagnosisStarted(params: {
       questionSetId: params.questionSetId,
       resumed: params.resumed,
       source: params.source ?? undefined,
-      entryMode: params.entryMode ?? undefined,
-      entryIntent: params.entryIntent ?? undefined,
     },
   });
 }

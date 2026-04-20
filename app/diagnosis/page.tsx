@@ -69,7 +69,7 @@ export default function DiagnosisPage() {
     }
 
     return {
-      source: "telegram_diagnostic_intake" as const,
+      source: "telegram_entry" as const,
       goal: goal?.trim() || null,
       symptoms,
     };

@@ -66,8 +66,6 @@ export default async function CaseArtifactPage({
         <span className="eyebrow">
           {artifact.artifactType === "preliminary_screening"
             ? "Предварительный скрининг"
-            : artifact.artifactType === "diagnostic_intake"
-              ? "Диагностический intake"
             : "Сохранённый разбор"}
         </span>
         <h1>{artifact.title}</h1>

@@ -260,44 +260,10 @@ export interface AiToolExplanationResponse {
   expectedOutcome: string;
 }
 
-export type EntryMode =
-  | "problem_first"
-  | "tool_discovery"
-  | "specific_tool_request"
-  | "unclear";
-
-export interface EntryIntent {
-  rawText: string;
-  primaryIntent:
-    | "growth_problem"
-    | "sales_problem"
-    | "team_problem"
-    | "management_problem"
-    | "finance_problem"
-    | "operations_problem"
-    | "tool_request"
-    | "unclear";
-  possibleDomains: string[];
-  confidence: "low" | "medium" | "high";
-}
-
-export type ToolConfidence = "low" | "medium" | "high";
-
-export interface EntryConversationFrame {
-  goalHypotheses: string[];
-  symptomHints: string[];
-  currentDiagnosticFocus: string | null;
-}
-
 export interface EntrySessionState {
   telegramUserId: number;
   stage: "initial" | "clarifying" | "ready_for_routing";
-  entryMode: EntryMode;
   initialMessage: string;
-  detectedIntent: EntryIntent | null;
-  toolConfidence?: ToolConfidence;
-  conversationFrame: EntryConversationFrame;
-  activeUnknown: string | null;
   clarifyingAnswers: Array<{
     questionKey: string;
     questionText: string;
@@ -325,22 +291,6 @@ export interface EntryRoutingDecision {
     url: string;
   };
   reason: string;
-}
-
-export interface EntryHypothesis {
-  summary: string;
-  likelyAreas: string[];
-  uncertaintyNote: string;
-}
-
-export interface ToolDemandSignal {
-  toolQuery: string;
-  normalizedTool?: string;
-  entryMode: EntryMode;
-  detectedIntent?: string;
-  confidence: "low" | "medium" | "high";
-  telegramUserId: number;
-  createdAt: string;
 }
 
 export interface TelegramEntryReply {

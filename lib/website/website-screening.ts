@@ -13,7 +13,6 @@ import { getOrCreateTelegramAppUser } from "@/lib/telegram/app-user";
 import {
   extractWebsiteContextFromText,
 } from "@/lib/website/extract-website-context";
-import type { TelegramEntryReply } from "@/types/domain";
 import { z } from "zod";
 
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
@@ -153,36 +152,6 @@ function getStructuredOutput(response: Record<string, unknown>) {
   return null;
 }
 
-function formatWebsiteScreeningReply(params: {
-  result: WebsiteScreeningResult;
-  caseUrl: string;
-}): TelegramEntryReply {
-  const { result, caseUrl } = params;
-  const riskLines = result.possibleRiskAreas
-    .slice(0, 4)
-    .map((item) => `- ${item.area}: ${item.whyCheck}`)
-    .join("\n");
-
-  return {
-    text: [
-      "Сделал внешний скрининг сайта. Это не диагноз бизнеса: по одной ссылке нельзя честно определить внутреннее ограничение.",
-      `Что видно снаружи: ${result.observedPositioning}`,
-      `Сильные стороны:\n${result.visibleStrengths.slice(0, 3).map((item) => `- ${item}`).join("\n")}`,
-      `Что стоит проверить:\n${riskLines}`,
-      `Что нельзя утверждать по сайту:\n${result.cannotConclude.slice(0, 3).map((item) => `- ${item}`).join("\n")}`,
-      [
-        "По одной ссылке я могу сделать только внешний скрининг: что видно по сайту, офферу и пути пользователя.",
-        `Что дальше:\n${POST_WEBSITE_SCREENING_REQUEST_TEXT}\nНапишите запрос в 1–2 фразах.`,
-      ].join("\n\n"),
-    ].join("\n\n"),
-    cta: {
-      label: "Открыть сохранённый скрининг",
-      url: caseUrl,
-    },
-    stage: "clarifying",
-  };
-}
-
 function buildWebsiteScreeningMarkdown(result: WebsiteScreeningResult) {
   return [
     "## Что видно снаружи",
@@ -231,8 +200,6 @@ export async function persistTelegramWebsiteScreening(params: {
     text: params.rawText,
     metadata: {
       telegramUserId: params.telegramUserId,
-      entryMode: "problem_first",
-      screeningType: "website_only",
     },
   });
 
@@ -256,34 +223,6 @@ export async function persistTelegramWebsiteScreening(params: {
   return buildCaseDeepLink({
     caseId: completion.case.id,
     token: completion.case.publicShareToken,
-  });
-}
-
-async function buildReplyAndPersist(params: {
-  telegramUserId: number;
-  telegramUsername?: string | null;
-  firstName?: string | null;
-  lastName?: string | null;
-  rawText: string;
-  result: WebsiteScreeningResult;
-}) {
-  const previewReply = formatWebsiteScreeningReply({
-    result: params.result,
-    caseUrl: "#",
-  });
-  const caseUrl = await persistTelegramWebsiteScreening({
-    telegramUserId: params.telegramUserId,
-    telegramUsername: params.telegramUsername,
-    firstName: params.firstName,
-    lastName: params.lastName,
-    rawText: params.rawText,
-    result: params.result,
-    replyText: previewReply.text,
-  });
-
-  return formatWebsiteScreeningReply({
-    result: params.result,
-    caseUrl,
   });
 }
 
@@ -370,25 +309,4 @@ export async function generateWebsiteScreeningResult(params: {
     });
     throw error instanceof Error ? error : new Error("Website screening failed.");
   }
-}
-
-export async function runTelegramWebsiteScreening(params: {
-  telegramUserId: number;
-  telegramUsername?: string | null;
-  firstName?: string | null;
-  lastName?: string | null;
-  rawText: string;
-}): Promise<TelegramEntryReply> {
-  const result = await generateWebsiteScreeningResult({
-    rawText: params.rawText,
-  });
-
-  return buildReplyAndPersist({
-    telegramUserId: params.telegramUserId,
-    telegramUsername: params.telegramUsername,
-    firstName: params.firstName,
-    lastName: params.lastName,
-    rawText: params.rawText,
-    result,
-  });
 }

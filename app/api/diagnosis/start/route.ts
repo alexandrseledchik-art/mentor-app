@@ -418,8 +418,6 @@ export async function POST(request: Request) {
 
   const referer = request.headers.get("referer");
   let source: string | null = null;
-  let entryMode: string | null = null;
-  let entryIntent: string | null = null;
   let refererIntakeGoal: string | null = null;
   let refererIntakeSymptoms: string[] = [];
 
@@ -427,8 +425,6 @@ export async function POST(request: Request) {
     try {
       const refererUrl = new URL(referer);
       source = refererUrl.searchParams.get("source");
-      entryMode = refererUrl.searchParams.get("entry_mode");
-      entryIntent = refererUrl.searchParams.get("entry_intent");
       refererIntakeGoal = refererUrl.searchParams.get("intake_goal");
       refererIntakeSymptoms = (refererUrl.searchParams.get("intake_symptoms") ?? "")
         .split("|")
@@ -437,19 +433,17 @@ export async function POST(request: Request) {
         .slice(0, 4);
     } catch {
       source = null;
-      entryMode = null;
-      entryIntent = null;
       refererIntakeGoal = null;
       refererIntakeSymptoms = [];
     }
   }
 
   const resolvedIntakeContext =
-    intakeContext?.source === "telegram_diagnostic_intake" ||
+    intakeContext?.source === "telegram_entry" ||
     refererIntakeGoal ||
     refererIntakeSymptoms.length > 0
       ? {
-          source: "telegram_diagnostic_intake" as const,
+          source: "telegram_entry" as const,
           goal: intakeContext?.goal ?? refererIntakeGoal ?? null,
           symptoms:
             intakeContext?.symptoms?.slice(0, 4) ??
@@ -464,8 +458,6 @@ export async function POST(request: Request) {
     questionSetId: questionSetResult.questionSet.id,
     resumed: sessionResult.resumed,
     source,
-    entryMode,
-    entryIntent,
   });
 
   const payload: DiagnosisStartResponse = {
