@@ -106,3 +106,46 @@ export async function sendTelegramEntryReply(params: {
     cta: params.reply.cta,
   });
 }
+
+export async function sendTelegramChatAction(params: {
+  chatId: number;
+  action: "typing";
+}) {
+  const botToken = process.env.TELEGRAM_BOT_TOKEN;
+
+  if (!botToken) {
+    console.error("TELEGRAM CHAT ACTION SKIPPED", {
+      reason: "missing_bot_token",
+    });
+    return false;
+  }
+
+  try {
+    const response = await fetch(`https://api.telegram.org/bot${botToken}/sendChatAction`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        chat_id: params.chatId,
+        action: params.action,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => "");
+      console.error("TELEGRAM CHAT ACTION FAILED", {
+        status: response.status,
+        body: errorText || "empty_response",
+      });
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("TELEGRAM CHAT ACTION FAILED", {
+      message: error instanceof Error ? error.message : "unknown_error",
+    });
+    return false;
+  }
+}

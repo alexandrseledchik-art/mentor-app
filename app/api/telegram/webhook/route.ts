@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { handleTelegramEntry } from "@/lib/entry/handle-entry";
 import {
+  sendTelegramChatAction,
   sendTelegramEntryReply,
   sendTelegramMessage,
 } from "@/lib/telegram/telegram-bot";
@@ -49,6 +50,9 @@ function isWebhookAuthorized(request: Request) {
 }
 
 export async function POST(request: Request) {
+  let chatId: number | undefined;
+  let telegramUserId: number | undefined;
+
   try {
     if (!isWebhookAuthorized(request)) {
       console.error("TELEGRAM WEBHOOK UNAUTHORIZED");
@@ -57,9 +61,10 @@ export async function POST(request: Request) {
 
     const body = (await request.json().catch(() => null)) as TelegramWebhookUpdate | null;
     const message = body?.message;
+    const messageFrom = message?.from;
     let text = message?.text?.trim();
-    const chatId = message?.chat?.id;
-    const telegramUserId = message?.from?.id;
+    chatId = message?.chat?.id;
+    telegramUserId = messageFrom?.id;
 
     if (!chatId || !telegramUserId) {
       return NextResponse.json({ ok: true, processed: false });
@@ -69,6 +74,11 @@ export async function POST(request: Request) {
       const audioAttachment = getTelegramAudioAttachment(message);
 
       if (audioAttachment) {
+        await sendTelegramChatAction({
+          chatId,
+          action: "typing",
+        });
+
         text = (await transcribeTelegramAudio(audioAttachment)) ?? undefined;
 
         if (!text) {
@@ -110,11 +120,16 @@ export async function POST(request: Request) {
       });
     }
 
+    await sendTelegramChatAction({
+      chatId,
+      action: "typing",
+    });
+
     const result = await handleTelegramEntry({
       telegramUserId,
-      telegramUsername: message.from?.username ?? null,
-      firstName: message.from?.first_name ?? null,
-      lastName: message.from?.last_name ?? null,
+      telegramUsername: messageFrom?.username ?? null,
+      firstName: messageFrom?.first_name ?? null,
+      lastName: messageFrom?.last_name ?? null,
       text,
     });
 
@@ -140,6 +155,15 @@ export async function POST(request: Request) {
     console.error("TELEGRAM WEBHOOK FAILED", {
       message: error instanceof Error ? error.message : "unknown_error",
     });
+
+    if (chatId) {
+      await sendTelegramMessage({
+        chatId,
+        text:
+          "Не удалось обработать сообщение с первого раза. Попробуйте отправить ещё раз или напишите коротко текстом, что хотите разобрать.",
+      });
+    }
+
     return NextResponse.json({ ok: false, processed: false }, { status: 500 });
   }
 }
