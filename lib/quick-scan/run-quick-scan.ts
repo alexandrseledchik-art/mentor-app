@@ -1,5 +1,7 @@
 import "server-only";
 
+import { getOpenAiModel, getOpenAiNumberEnv } from "@/lib/openai/model-config";
+
 import { QUICK_SCAN_SYSTEM_PROMPT } from "./prompt";
 import {
   QUICK_SCAN_JSON_SCHEMA,
@@ -68,9 +70,9 @@ function postProcessQuickScan(result: QuickScanResult): QuickScanResult {
 export async function runQuickScan(input: QuickScanInput): Promise<QuickScanResult> {
   const parsedInput = quickScanInputSchema.parse(input);
   const apiKey = process.env.OPENAI_API_KEY;
-  const model = process.env.OPENAI_MODEL ?? "gpt-4.1-mini";
-  const temperature = Number(process.env.OPENAI_TEMPERATURE ?? "0.2");
-  const maxOutputTokens = Number(process.env.OPENAI_MAX_TOKENS ?? "1100");
+  const model = getOpenAiModel();
+  const temperature = getOpenAiNumberEnv("OPENAI_TEMPERATURE", 0.2);
+  const maxOutputTokens = getOpenAiNumberEnv("OPENAI_MAX_TOKENS", 1100);
 
   if (!apiKey) {
     return buildQuickScanFallback(parsedInput);
@@ -85,8 +87,8 @@ export async function runQuickScan(input: QuickScanInput): Promise<QuickScanResu
       },
       body: JSON.stringify({
         model,
-        temperature: Number.isFinite(temperature) ? temperature : 0.2,
-        max_output_tokens: Number.isFinite(maxOutputTokens) ? maxOutputTokens : 1100,
+        temperature,
+        max_output_tokens: maxOutputTokens,
         input: [
           {
             role: "system",

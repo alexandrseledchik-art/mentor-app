@@ -1,7 +1,10 @@
 import "server-only";
 
 import { buildDiagnosisDeepLink, buildToolDeepLink } from "@/lib/entry/deeplink";
-import { shouldRouteWebsiteInputDirectly } from "@/lib/entry/website-routing";
+import {
+  shouldRouteWebsiteInputDirectly,
+  shouldRouteWebsiteInputToScreening,
+} from "@/lib/entry/website-routing";
 import {
   isAffirmativeAnswer,
   isNegativeAnswer,
@@ -87,6 +90,18 @@ export async function decideEntryRouting({
     rawText.toLowerCase().includes("без вопросов") ||
     rawText.toLowerCase().includes("просто скажи") ||
     rawText.toLowerCase().includes("не хочу отвечать");
+
+  if (shouldRouteWebsiteInputToScreening({ rawText })) {
+    return {
+      decision: {
+        action: "route_to_website_screening",
+        reason:
+          "Пользователь дал только сайт. Этого достаточно для внешнего скрининга, но недостаточно для честного диагноза бизнеса.",
+      },
+      toolConfidence: toolMatch.confidence,
+      matchedTool: toolMatch.tool,
+    };
+  }
 
   if (shouldRouteWebsiteInputDirectly({ mode, rawText })) {
     return {

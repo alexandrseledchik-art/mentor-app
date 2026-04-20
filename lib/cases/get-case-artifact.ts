@@ -4,6 +4,7 @@ import { getSupabaseAdminClient } from "@/lib/supabase/server";
 
 export interface CaseArtifactDetail {
   caseId: string;
+  artifactType: string;
   title: string;
   summary: string;
   contentMarkdown: string;
@@ -34,25 +35,29 @@ export async function getCaseArtifactByShareToken(params: {
 
   const { data: artifactRow, error: artifactError } = await supabase
     .from("case_artifacts")
-    .select("title, summary, content_markdown, created_at")
+    .select("artifact_type, title, summary, content_markdown, created_at")
     .eq("case_id", caseRow.id)
-    .eq("artifact_type", "diagnostic_result")
-    .maybeSingle();
+    .in("artifact_type", ["diagnostic_result", "preliminary_screening"]);
 
   if (artifactError) {
     throw new Error(`Failed to load case artifact: ${artifactError.message}`);
   }
 
-  if (!artifactRow) {
+  if (!artifactRow || artifactRow.length === 0) {
     return null;
   }
 
+  const selectedArtifact =
+    artifactRow.find((item) => item.artifact_type === "diagnostic_result") ??
+    artifactRow[0];
+
   return {
     caseId: caseRow.id,
-    title: artifactRow.title,
-    summary: artifactRow.summary,
-    contentMarkdown: artifactRow.content_markdown,
-    createdAt: artifactRow.created_at,
+    artifactType: selectedArtifact.artifact_type,
+    title: selectedArtifact.title,
+    summary: selectedArtifact.summary,
+    contentMarkdown: selectedArtifact.content_markdown,
+    createdAt: selectedArtifact.created_at,
     completedAt: caseRow.completed_at,
   };
 }

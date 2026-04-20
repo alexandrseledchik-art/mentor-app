@@ -1,6 +1,7 @@
 import "server-only";
 
 import { logAiRouteEvent } from "@/lib/diagnosis/ai-route-utils";
+import { getOpenAiModel, getOpenAiNumberEnv } from "@/lib/openai/model-config";
 import { aiToolExplanationResponseSchema } from "@/validators/diagnosis";
 
 import type {
@@ -161,9 +162,9 @@ export async function generateAiToolExplanation(
   context: ToolNavigationContext,
 ): Promise<AiToolExplanationResponse> {
   const apiKey = process.env.OPENAI_API_KEY;
-  const model = process.env.OPENAI_MODEL ?? "gpt-4.1-mini";
-  const temperature = Number(process.env.OPENAI_TEMPERATURE ?? "0.3");
-  const maxOutputTokens = Number(process.env.OPENAI_MAX_TOKENS ?? "900");
+  const model = getOpenAiModel();
+  const temperature = getOpenAiNumberEnv("OPENAI_TEMPERATURE", 0.3);
+  const maxOutputTokens = getOpenAiNumberEnv("OPENAI_MAX_TOKENS", 900);
 
   if (!apiKey) {
     logAiRouteEvent("tool_explainer_fallback_no_api_key", {
@@ -182,8 +183,8 @@ export async function generateAiToolExplanation(
       },
       body: JSON.stringify({
         model,
-        temperature: Number.isFinite(temperature) ? temperature : 0.3,
-        max_output_tokens: Number.isFinite(maxOutputTokens) ? maxOutputTokens : 900,
+        temperature,
+        max_output_tokens: maxOutputTokens,
         input: [
           {
             role: "system",

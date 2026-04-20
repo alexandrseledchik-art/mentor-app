@@ -4,7 +4,10 @@ import assert from "node:assert/strict";
 import { buildDiagnosisDeepLink } from "@/lib/entry/deeplink";
 import { detectEntryIntent, detectEntryMode } from "@/lib/entry/detection";
 import { buildEntryHypothesis } from "@/lib/entry/hypothesis";
-import { shouldRouteWebsiteInputDirectly } from "@/lib/entry/website-routing";
+import {
+  shouldRouteWebsiteInputDirectly,
+  shouldRouteWebsiteInputToScreening,
+} from "@/lib/entry/website-routing";
 
 test("entry mode: vague chaos -> problem_first", () => {
   assert.equal(detectEntryMode("у нас хаос"), "problem_first");
@@ -25,13 +28,25 @@ test("entry intent: sales stagnation maps to sales/growth", () => {
   assert.ok(intent.possibleDomains.includes("sales"));
 });
 
-test("entry routing: website input routes directly to diagnosis", async () => {
+test("entry routing: URL-only input routes to website screening, not diagnosis", async () => {
   const rawText = "https://dtlinvest.ru/land/";
   const mode = detectEntryMode(rawText);
   const intent = detectEntryIntent(rawText, mode);
 
   assert.equal(mode, "problem_first");
-  assert.equal(intent.primaryIntent, "operations_problem");
+  assert.equal(intent.primaryIntent, "unclear");
+  assert.equal(shouldRouteWebsiteInputToScreening({ rawText }), true);
+  assert.equal(shouldRouteWebsiteInputDirectly({ mode, rawText }), false);
+});
+
+test("entry routing: URL with business pain can route to diagnosis", () => {
+  const rawText = "https://example.com продажи просели и лиды стали хуже";
+  const mode = detectEntryMode(rawText);
+  const intent = detectEntryIntent(rawText, mode);
+
+  assert.equal(mode, "problem_first");
+  assert.equal(intent.primaryIntent, "sales_problem");
+  assert.equal(shouldRouteWebsiteInputToScreening({ rawText }), false);
   assert.equal(shouldRouteWebsiteInputDirectly({ mode, rawText }), true);
 });
 

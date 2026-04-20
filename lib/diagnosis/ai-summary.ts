@@ -1,5 +1,6 @@
 import "server-only";
 
+import { getOpenAiModel, getOpenAiNumberEnv } from "@/lib/openai/model-config";
 import { diagnosisAiSummarySchema } from "@/validators/diagnosis";
 
 import type {
@@ -340,10 +341,10 @@ export async function generateDiagnosisAiSummary(
   dimensionScores: DiagnosisDimensionScore[],
 ): Promise<DiagnosisAiSummary | null> {
   const apiKey = process.env.OPENAI_API_KEY;
-  const model = process.env.OPENAI_MODEL ?? "gpt-4.1-mini";
+  const model = getOpenAiModel();
   const promptVersion = process.env.OPENAI_SYSTEM_PROMPT_VERSION ?? "v1";
-  const temperature = Number(process.env.OPENAI_TEMPERATURE ?? "0.3");
-  const maxOutputTokens = Number(process.env.OPENAI_MAX_TOKENS ?? "800");
+  const temperature = getOpenAiNumberEnv("OPENAI_TEMPERATURE", 0.3);
+  const maxOutputTokens = getOpenAiNumberEnv("OPENAI_MAX_TOKENS", 800);
 
   if (!apiKey) {
     return null;
@@ -362,8 +363,8 @@ export async function generateDiagnosisAiSummary(
       },
       body: JSON.stringify({
         model,
-        temperature: Number.isFinite(temperature) ? temperature : 0.3,
-        max_output_tokens: Number.isFinite(maxOutputTokens) ? maxOutputTokens : 800,
+        temperature,
+        max_output_tokens: maxOutputTokens,
         input: [
           {
             role: "system",

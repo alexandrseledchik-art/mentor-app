@@ -54,6 +54,16 @@ export function buildTelegramEntryReply(params: {
     };
   }
 
+  if (decision.action === "route_to_website_screening") {
+    return {
+      text: [
+        "Вижу, что вы дали только сайт. По нему можно сделать внешний скрининг, но не честный диагноз бизнеса.",
+        "Сначала покажу, что видно снаружи: позиционирование, возможные зоны потерь и что стоит проверить дальше.",
+      ].join("\n\n"),
+      stage: "ready_for_routing",
+    };
+  }
+
   return {
     text: [
       hypothesisText ?? "По текущему описанию лучше не угадывать инструмент в чате.",

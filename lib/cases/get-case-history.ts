@@ -44,7 +44,7 @@ type CaseRow = Pick<
 >;
 type ArtifactRow = Pick<
   Database["public"]["Tables"]["case_artifacts"]["Row"],
-  "case_id" | "summary" | "title"
+  "artifact_type" | "case_id" | "summary" | "title"
 >;
 type SnapshotRow = Database["public"]["Tables"]["company_snapshots"]["Row"];
 
@@ -128,15 +128,24 @@ export async function getCaseHistoryByUserId(
   const caseIds = caseRows.map((row) => row.id);
   const { data: artifactRows, error: artifactError } = await supabase
     .from("case_artifacts")
-    .select("case_id, title, summary")
+    .select("artifact_type, case_id, title, summary")
     .in("case_id", caseIds)
-    .eq("artifact_type", "diagnostic_result");
+    .in("artifact_type", ["diagnostic_result", "preliminary_screening"]);
 
   if (artifactError) {
     throw new Error(`Failed to load case artifacts: ${artifactError.message}`);
   }
 
-  const artifacts = new Map((artifactRows ?? []).map((row) => [row.case_id, row as ArtifactRow]));
+  const artifacts = new Map<string, ArtifactRow>();
+
+  for (const row of artifactRows ?? []) {
+    const artifact = row as ArtifactRow;
+    const existing = artifacts.get(artifact.case_id);
+
+    if (!existing || artifact.artifact_type === "diagnostic_result") {
+      artifacts.set(artifact.case_id, artifact);
+    }
+  }
 
   return caseRows.map((row) => {
     const caseRow = row as CaseRow;

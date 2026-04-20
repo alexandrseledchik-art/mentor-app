@@ -1,5 +1,5 @@
 import type { EntryIntent, EntryMode } from "@/types/domain";
-import { hasUrl } from "@/lib/url-utils";
+import { hasNonUrlText, hasUrl } from "@/lib/url-utils";
 
 const TOOL_REQUEST_WORDS = [
   "инструмент",
@@ -107,12 +107,12 @@ export function detectEntryIntent(rawText: string, mode: EntryMode): EntryIntent
     };
   }
 
-  if (hasUrl(rawText)) {
+  if (hasUrl(rawText) && !hasNonUrlText(rawText)) {
     return {
       rawText,
-      primaryIntent: "operations_problem",
-      possibleDomains: Array.from(new Set(["operations", "management", ...possibleDomains])).slice(0, 4),
-      confidence: "medium",
+      primaryIntent: "unclear",
+      possibleDomains: [],
+      confidence: "low",
     };
   }
 

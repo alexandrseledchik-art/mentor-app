@@ -1,5 +1,7 @@
 import "server-only";
 
+import { getOpenAiModel, getOpenAiNumberEnv } from "@/lib/openai/model-config";
+
 import { DIAGNOSTIC_CORE_SYSTEM_PROMPT } from "./prompt";
 import {
   DIAGNOSTIC_CORE_JSON_SCHEMA,
@@ -79,9 +81,9 @@ export async function runDiagnosticCore(
 ): Promise<DiagnosticStructuredResult> {
   const parsedInput = diagnosticInputSchema.parse(input);
   const apiKey = process.env.OPENAI_API_KEY;
-  const model = process.env.OPENAI_MODEL ?? "gpt-4.1-mini";
-  const temperature = Number(process.env.OPENAI_TEMPERATURE ?? "0.2");
-  const maxOutputTokens = Number(process.env.OPENAI_MAX_TOKENS ?? "2600");
+  const model = getOpenAiModel();
+  const temperature = getOpenAiNumberEnv("OPENAI_TEMPERATURE", 0.2);
+  const maxOutputTokens = getOpenAiNumberEnv("OPENAI_MAX_TOKENS", 2600);
 
   if (!apiKey) {
     return buildDiagnosticFallback(parsedInput);
@@ -96,8 +98,8 @@ export async function runDiagnosticCore(
       },
       body: JSON.stringify({
         model,
-        temperature: Number.isFinite(temperature) ? temperature : 0.2,
-        max_output_tokens: Number.isFinite(maxOutputTokens) ? maxOutputTokens : 2600,
+        temperature,
+        max_output_tokens: maxOutputTokens,
         input: [
           {
             role: "system",

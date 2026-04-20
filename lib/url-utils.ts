@@ -11,3 +11,17 @@ export function extractUrls(text: string): string[] {
 export function hasUrl(text: string) {
   return extractUrls(text).length > 0;
 }
+
+export function stripUrls(text: string) {
+  return extractUrls(text).reduce(
+    (result, url) => result.replace(url, "").replace(url.replace(/^https?:\/\//, ""), ""),
+    text,
+  );
+}
+
+export function hasNonUrlText(text: string) {
+  return stripUrls(text)
+    .replace(/[^\p{L}\p{N}\s]+/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim().length > 0;
+}

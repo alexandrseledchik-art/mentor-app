@@ -15,6 +15,7 @@ import { buildEntryHypothesis } from "@/lib/entry/hypothesis";
 import { buildTelegramEntryReply } from "@/lib/entry/reply";
 import { decideEntryRouting } from "@/lib/entry/routing";
 import { runTelegramDiagnosticCase } from "@/lib/telegram/diagnostic-case";
+import { runTelegramWebsiteScreening } from "@/lib/website/website-screening";
 import {
   getEntrySessionByTelegramUserId,
   upsertEntrySession,
@@ -228,7 +229,17 @@ export async function handleTelegramEntry(params: {
     hypothesis,
   });
 
-  if (normalizedDecision.action === "route_to_diagnosis") {
+  if (normalizedDecision.action === "route_to_website_screening") {
+    reply = await runTelegramWebsiteScreening({
+      telegramUserId: params.telegramUserId,
+      telegramUsername: params.telegramUsername,
+      firstName: params.firstName,
+      lastName: params.lastName,
+      rawText: workingText,
+      entryMode: mode,
+      entryIntent: intent.primaryIntent,
+    });
+  } else if (normalizedDecision.action === "route_to_diagnosis") {
     try {
       reply = await runTelegramDiagnosticCase({
         telegramUserId: params.telegramUserId,

@@ -63,7 +63,11 @@ export default async function CaseArtifactPage({
   return (
     <main className="page-shell">
       <section className="card">
-        <span className="eyebrow">Сохранённый разбор</span>
+        <span className="eyebrow">
+          {artifact.artifactType === "preliminary_screening"
+            ? "Предварительный скрининг"
+            : "Сохранённый разбор"}
+        </span>
         <h1>{artifact.title}</h1>
         <p className="muted">
           Создано {formatDate(artifact.createdAt)}

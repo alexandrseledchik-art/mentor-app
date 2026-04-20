@@ -303,6 +303,7 @@ export interface EntrySessionState {
 export interface EntryRoutingDecision {
   action:
     | "ask_question"
+    | "route_to_website_screening"
     | "route_to_diagnosis"
     | "route_to_tool"
     | "confirm_tool_then_route";

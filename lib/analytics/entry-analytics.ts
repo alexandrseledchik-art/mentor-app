@@ -65,6 +65,22 @@ export async function trackEntryRouted(params: {
   decision: EntryRoutingDecision;
   intent: EntryIntent | null;
 }) {
+  if (params.decision.action === "route_to_website_screening") {
+    await trackEvent({
+      event: "entry_routed_to_website_screening",
+      telegramUserId: params.telegramUserId,
+      entrySessionTelegramUserId: params.telegramUserId,
+      payload: {
+        entryMode: params.session.entryMode,
+        primaryIntent: params.intent?.primaryIntent ?? "unclear",
+        confidence: params.intent?.confidence ?? "low",
+        turnCount: params.session.turnCount,
+        reason: params.decision.reason,
+      },
+    });
+    return;
+  }
+
   if (params.decision.action === "route_to_tool" && params.decision.toolSuggestion) {
     await trackEvent({
       event: "entry_routed_to_tool",

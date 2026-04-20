@@ -4,6 +4,7 @@ export type AnalyticsEvent =
   | "entry_started"
   | "entry_mode_detected"
   | "entry_question_asked"
+  | "entry_routed_to_website_screening"
   | "entry_routed_to_diagnosis"
   | "entry_routed_to_tool"
   | "entry_tool_not_found"
@@ -28,6 +29,13 @@ export type AnalyticsPayloadMap = {
     entryMode: string;
     questionKey: string;
     turnCount: number;
+  };
+  entry_routed_to_website_screening: {
+    entryMode: string;
+    primaryIntent: string;
+    confidence: string;
+    turnCount: number;
+    reason: string;
   };
   entry_routed_to_diagnosis: {
     entryMode: string;
