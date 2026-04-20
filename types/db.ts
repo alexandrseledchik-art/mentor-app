@@ -9,6 +9,265 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
+      case_artifacts: {
+        Row: {
+          artifact_type: string;
+          case_id: string;
+          company_id: string | null;
+          content_markdown: string;
+          created_at: string;
+          id: string;
+          summary: string;
+          title: string;
+          user_id: string;
+        };
+        Insert: {
+          artifact_type?: string;
+          case_id: string;
+          company_id?: string | null;
+          content_markdown: string;
+          created_at?: string;
+          id?: string;
+          summary: string;
+          title: string;
+          user_id: string;
+        };
+        Update: {
+          artifact_type?: string;
+          case_id?: string;
+          company_id?: string | null;
+          content_markdown?: string;
+          created_at?: string;
+          id?: string;
+          summary?: string;
+          title?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "case_artifacts_case_id_fkey";
+            columns: ["case_id"];
+            isOneToOne: false;
+            referencedRelation: "cases";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "case_artifacts_company_id_fkey";
+            columns: ["company_id"];
+            isOneToOne: false;
+            referencedRelation: "companies";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "case_artifacts_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      case_messages: {
+        Row: {
+          case_id: string;
+          created_at: string;
+          id: string;
+          metadata: Json;
+          role: string;
+          text: string;
+        };
+        Insert: {
+          case_id: string;
+          created_at?: string;
+          id?: string;
+          metadata?: Json;
+          role: string;
+          text: string;
+        };
+        Update: {
+          case_id?: string;
+          created_at?: string;
+          id?: string;
+          metadata?: Json;
+          role?: string;
+          text?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "case_messages_case_id_fkey";
+            columns: ["case_id"];
+            isOneToOne: false;
+            referencedRelation: "cases";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      case_results: {
+        Row: {
+          case_id: string;
+          company_id: string | null;
+          confidence_level: string | null;
+          created_at: string;
+          dominant_situation: string | null;
+          id: string;
+          main_constraint: string | null;
+          structured_result: Json;
+          user_id: string;
+        };
+        Insert: {
+          case_id: string;
+          company_id?: string | null;
+          confidence_level?: string | null;
+          created_at?: string;
+          dominant_situation?: string | null;
+          id?: string;
+          main_constraint?: string | null;
+          structured_result: Json;
+          user_id: string;
+        };
+        Update: {
+          case_id?: string;
+          company_id?: string | null;
+          confidence_level?: string | null;
+          created_at?: string;
+          dominant_situation?: string | null;
+          id?: string;
+          main_constraint?: string | null;
+          structured_result?: Json;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "case_results_case_id_fkey";
+            columns: ["case_id"];
+            isOneToOne: true;
+            referencedRelation: "cases";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "case_results_company_id_fkey";
+            columns: ["company_id"];
+            isOneToOne: false;
+            referencedRelation: "companies";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "case_results_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      case_tool_recommendations: {
+        Row: {
+          case_id: string;
+          created_at: string;
+          id: string;
+          reason_now: string;
+          task_solved: string;
+          tool_slug: string | null;
+          tool_title: string;
+          why_not_secondary: string | null;
+        };
+        Insert: {
+          case_id: string;
+          created_at?: string;
+          id?: string;
+          reason_now: string;
+          task_solved: string;
+          tool_slug?: string | null;
+          tool_title: string;
+          why_not_secondary?: string | null;
+        };
+        Update: {
+          case_id?: string;
+          created_at?: string;
+          id?: string;
+          reason_now?: string;
+          task_solved?: string;
+          tool_slug?: string | null;
+          tool_title?: string;
+          why_not_secondary?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "case_tool_recommendations_case_id_fkey";
+            columns: ["case_id"];
+            isOneToOne: false;
+            referencedRelation: "cases";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      cases: {
+        Row: {
+          company_id: string | null;
+          completed_at: string | null;
+          created_at: string;
+          current_stage: string;
+          id: string;
+          initial_message: string;
+          source: string;
+          status: string;
+          turn_count: number;
+          updated_at: string;
+          user_id: string;
+          workspace_id: string | null;
+        };
+        Insert: {
+          company_id?: string | null;
+          completed_at?: string | null;
+          created_at?: string;
+          current_stage?: string;
+          id?: string;
+          initial_message: string;
+          source?: string;
+          status?: string;
+          turn_count?: number;
+          updated_at?: string;
+          user_id: string;
+          workspace_id?: string | null;
+        };
+        Update: {
+          company_id?: string | null;
+          completed_at?: string | null;
+          created_at?: string;
+          current_stage?: string;
+          id?: string;
+          initial_message?: string;
+          source?: string;
+          status?: string;
+          turn_count?: number;
+          updated_at?: string;
+          user_id?: string;
+          workspace_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "cases_company_id_fkey";
+            columns: ["company_id"];
+            isOneToOne: false;
+            referencedRelation: "companies";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "cases_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "cases_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       companies: {
         Row: {
           created_at: string;
@@ -55,6 +314,70 @@ export interface Database {
         Relationships: [
           {
             foreignKeyName: "companies_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      company_snapshots: {
+        Row: {
+          company_id: string;
+          current_goal: string | null;
+          dominant_situation: string | null;
+          first_wave_summary: string | null;
+          id: string;
+          main_constraint: string | null;
+          source_case_id: string | null;
+          summary: string;
+          tool_recommendations: Json;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          company_id: string;
+          current_goal?: string | null;
+          dominant_situation?: string | null;
+          first_wave_summary?: string | null;
+          id?: string;
+          main_constraint?: string | null;
+          source_case_id?: string | null;
+          summary: string;
+          tool_recommendations?: Json;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          company_id?: string;
+          current_goal?: string | null;
+          dominant_situation?: string | null;
+          first_wave_summary?: string | null;
+          id?: string;
+          main_constraint?: string | null;
+          source_case_id?: string | null;
+          summary?: string;
+          tool_recommendations?: Json;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "company_snapshots_company_id_fkey";
+            columns: ["company_id"];
+            isOneToOne: true;
+            referencedRelation: "companies";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "company_snapshots_source_case_id_fkey";
+            columns: ["source_case_id"];
+            isOneToOne: false;
+            referencedRelation: "cases";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "company_snapshots_user_id_fkey";
             columns: ["user_id"];
             isOneToOne: false;
             referencedRelation: "users";
