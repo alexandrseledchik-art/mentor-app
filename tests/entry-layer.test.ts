@@ -325,6 +325,10 @@ test("capability detector catches voice questions about the bot", () => {
     isCapabilityQuestion("Понимаешь голосовые сообщения? Понимаешь их?"),
     true,
   );
+  assert.equal(
+    isCapabilityQuestion("Ты голосовые принимаешь"),
+    true,
+  );
 });
 
 test("capability reply keeps focus on understanding the request", () => {
@@ -342,6 +346,15 @@ test("core consultant routes voice capability question to capability mode", asyn
 
   assert.equal(result.mode, "capability");
   assert.match(result.understanding, /вопрос о возможностях|возможностях бота/i);
+});
+
+test("core consultant treats colloquial voice capability phrasing as capability mode", async () => {
+  const result = await runCoreEntryConsultant({
+    rawText: "Ты голосовые принимаешь",
+    session: null,
+  });
+
+  assert.equal(result.mode, "capability");
 });
 
 test("core consultant routes URL-only input to website screening", async () => {
