@@ -14,6 +14,7 @@ import { detectEntryIntent, detectEntryMode, normalizeEntryText } from "@/lib/en
 import { buildEntryHypothesis } from "@/lib/entry/hypothesis";
 import { buildTelegramEntryReply } from "@/lib/entry/reply";
 import { decideEntryRouting } from "@/lib/entry/routing";
+import { runTelegramDiagnosticCase } from "@/lib/telegram/diagnostic-case";
 import {
   getEntrySessionByTelegramUserId,
   upsertEntrySession,
@@ -91,6 +92,9 @@ function normalizeDecision(decision: EntryRoutingDecision, params: {
 
 export async function handleTelegramEntry(params: {
   telegramUserId: number;
+  telegramUsername?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
   text: string;
 }): Promise<TelegramEntryResponse> {
   const text = params.text.trim();
@@ -218,11 +222,30 @@ export async function handleTelegramEntry(params: {
     intent,
   });
 
-  const reply = buildTelegramEntryReply({
+  let reply = buildTelegramEntryReply({
     session: persistedSession,
     decision: normalizedDecision,
     hypothesis,
   });
+
+  if (normalizedDecision.action === "route_to_diagnosis") {
+    try {
+      reply = await runTelegramDiagnosticCase({
+        telegramUserId: params.telegramUserId,
+        telegramUsername: params.telegramUsername,
+        firstName: params.firstName,
+        lastName: params.lastName,
+        workingText,
+        session: persistedSession,
+        intent,
+      });
+    } catch (error) {
+      console.error("TELEGRAM_DIAGNOSTIC_CASE_FAILED", {
+        telegramUserId: params.telegramUserId,
+        message: error instanceof Error ? error.message : "unknown_error",
+      });
+    }
+  }
 
   if (reply.stage === "ready_for_routing") {
     await trackEntryCompleted({

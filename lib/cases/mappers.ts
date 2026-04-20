@@ -14,6 +14,7 @@ export function mapCaseRow(row: CaseRow): BusinessCase {
     source: row.source as CaseSource,
     status: row.status as CaseStatus,
     initialMessage: row.initial_message,
+    publicShareToken: row.public_share_token,
     currentStage: row.current_stage,
     turnCount: row.turn_count,
     createdAt: row.created_at,

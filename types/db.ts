@@ -209,6 +209,7 @@ export interface Database {
           current_stage: string;
           id: string;
           initial_message: string;
+          public_share_token: string;
           source: string;
           status: string;
           turn_count: number;
@@ -223,6 +224,7 @@ export interface Database {
           current_stage?: string;
           id?: string;
           initial_message: string;
+          public_share_token?: string;
           source?: string;
           status?: string;
           turn_count?: number;
@@ -237,6 +239,7 @@ export interface Database {
           current_stage?: string;
           id?: string;
           initial_message?: string;
+          public_share_token?: string;
           source?: string;
           status?: string;
           turn_count?: number;

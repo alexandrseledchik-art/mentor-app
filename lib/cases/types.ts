@@ -12,6 +12,7 @@ export interface BusinessCase {
   source: CaseSource;
   status: CaseStatus;
   initialMessage: string;
+  publicShareToken: string;
   currentStage: string;
   turnCount: number;
   createdAt: string;

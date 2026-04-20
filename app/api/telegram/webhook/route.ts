@@ -66,6 +66,9 @@ export async function POST(request: Request) {
 
     const result = await handleTelegramEntry({
       telegramUserId,
+      telegramUsername: message.from?.username ?? null,
+      firstName: message.from?.first_name ?? null,
+      lastName: message.from?.last_name ?? null,
       text,
     });
 
