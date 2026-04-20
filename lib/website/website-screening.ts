@@ -16,6 +16,8 @@ import type { TelegramEntryReply } from "@/types/domain";
 import { z } from "zod";
 
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
+const WEBSITE_SCREENING_NEXT_QUESTION =
+  "Чтобы перейти к диагностике, уточните: что вы хотите разобрать дальше?";
 
 const websiteScreeningResultSchema = z.object({
   observedPositioning: z.string().trim().min(1),
@@ -30,7 +32,6 @@ const websiteScreeningResultSchema = z.object({
     .min(1)
     .max(5),
   cannotConclude: z.array(z.string().trim().min(1)).min(1).max(4),
-  nextBestQuestion: z.string().trim().min(1),
 });
 
 type WebsiteScreeningResult = z.infer<typeof websiteScreeningResultSchema>;
@@ -66,14 +67,12 @@ const WEBSITE_SCREENING_JSON_SCHEMA = {
       maxItems: 4,
       items: { type: "string" },
     },
-    nextBestQuestion: { type: "string" },
   },
   required: [
     "observedPositioning",
     "visibleStrengths",
     "possibleRiskAreas",
     "cannotConclude",
-    "nextBestQuestion",
   ],
 } as const;
 
@@ -88,7 +87,7 @@ const WEBSITE_SCREENING_SYSTEM_PROMPT = `Ты — business systems triage adviso
 - не превращай скрининг в полный консалтинг-отчёт
 - не предлагай автоматизацию как вывод по умолчанию
 - если сайт описывает продукт/сервис, анализируй видимый оффер и путь пользователя, а не "болезни" самой компании
-- итог должен помогать решить, что уточнить дальше для настоящей диагностики
+- не формулируй следующий вопрос пользователю, это делает продуктовый сценарий
 
 Формат ответа строго JSON по схеме.`;
 
@@ -156,8 +155,6 @@ function buildFallbackWebsiteScreening(context: WebsiteContext | null): WebsiteS
       "Нельзя определить реальное главное ограничение бизнеса только по сайту.",
       "Нельзя оценить финансы, команду, операционные процессы и управленческий учёт без внутренних данных.",
     ],
-    nextBestQuestion:
-      "Вы хотите разобрать именно сайт/оффер или найти главное ограничение бизнеса за этим запросом?",
   };
 }
 
@@ -178,7 +175,10 @@ function formatWebsiteScreeningReply(params: {
       `Сильные стороны:\n${result.visibleStrengths.slice(0, 3).map((item) => `- ${item}`).join("\n")}`,
       `Что стоит проверить:\n${riskLines}`,
       `Что нельзя утверждать по сайту:\n${result.cannotConclude.slice(0, 3).map((item) => `- ${item}`).join("\n")}`,
-      `Следующий лучший вопрос: ${result.nextBestQuestion}`,
+      [
+        "По одной ссылке я могу сделать только внешний скрининг: что видно по сайту, офферу и пути пользователя.",
+        WEBSITE_SCREENING_NEXT_QUESTION,
+      ].join("\n\n"),
     ].join("\n\n"),
     cta: {
       label: "Открыть сохранённый скрининг",
@@ -201,7 +201,7 @@ function buildWebsiteScreeningMarkdown(result: WebsiteScreeningResult) {
     "## Что нельзя утверждать по сайту",
     result.cannotConclude.map((item) => `- ${item}`).join("\n"),
     "## Следующий вопрос",
-    result.nextBestQuestion,
+    WEBSITE_SCREENING_NEXT_QUESTION,
   ].join("\n\n");
 }
 
