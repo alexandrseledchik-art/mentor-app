@@ -105,7 +105,14 @@ export async function POST(request: Request) {
       const sent = await sendEntryOffer(chatId);
 
       if (sent) {
-        await markEntryOfferShown(telegramUserId);
+        try {
+          await markEntryOfferShown(telegramUserId);
+        } catch (error) {
+          console.error("TELEGRAM ENTRY OFFER SESSION SAVE FAILED", {
+            telegramUserId,
+            message: error instanceof Error ? error.message : "unknown_error",
+          });
+        }
       } else {
         console.error("TELEGRAM ENTRY OFFER NOT SENT", {
           telegramUserId,

@@ -25,6 +25,19 @@ const EMPTY_CONVERSATION_FRAME: EntryConversationFrame = {
   currentDiagnosticFocus: null,
 };
 
+function isLegacyEntrySessionSchemaError(error: unknown) {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const message = "message" in error ? String(error.message ?? "") : "";
+
+  return (
+    message.includes("conversation_frame") ||
+    message.includes("active_unknown")
+  );
+}
+
 function mapEntrySession(row: EntrySessionRow): InternalEntrySessionState {
   const clarifyingAnswers = Array.isArray(row.clarifying_answers)
     ? row.clarifying_answers
@@ -98,25 +111,44 @@ export async function getEntrySessionByTelegramUserId(telegramUserId: number) {
 export async function upsertEntrySession(state: EntrySessionState) {
   const supabase = getSupabaseAdminClient();
   const internalState = state as InternalEntrySessionState;
-  const { data, error } = await supabase
+  const basePayload = {
+    telegram_user_id: state.telegramUserId,
+    stage: state.stage,
+    entry_mode: state.entryMode,
+    initial_message: state.initialMessage,
+    last_question_key: internalState.lastQuestionKey ?? null,
+    last_question_text: internalState.lastQuestionText ?? null,
+    detected_intent: (state.detectedIntent ?? null) as Json,
+    tool_confidence: state.toolConfidence ?? null,
+    clarifying_answers: state.clarifyingAnswers as unknown as Json,
+    turn_count: state.turnCount,
+    updated_at: new Date().toISOString(),
+  };
+
+  const nextSchemaPayload = {
+    ...basePayload,
+    conversation_frame: state.conversationFrame as unknown as Json,
+    active_unknown: state.activeUnknown ?? null,
+  };
+
+  let { data, error } = await supabase
     .from("entry_sessions")
-    .upsert([{
-      telegram_user_id: state.telegramUserId,
-      stage: state.stage,
-      entry_mode: state.entryMode,
-      initial_message: state.initialMessage,
-      last_question_key: internalState.lastQuestionKey ?? null,
-      last_question_text: internalState.lastQuestionText ?? null,
-      detected_intent: (state.detectedIntent ?? null) as Json,
-      tool_confidence: state.toolConfidence ?? null,
-      conversation_frame: state.conversationFrame as unknown as Json,
-      active_unknown: state.activeUnknown ?? null,
-      clarifying_answers: state.clarifyingAnswers as unknown as Json,
-      turn_count: state.turnCount,
-      updated_at: new Date().toISOString(),
-    }], { onConflict: "telegram_user_id" })
+    .upsert([nextSchemaPayload], { onConflict: "telegram_user_id" })
     .select("*")
     .single();
+
+  if (error && isLegacyEntrySessionSchemaError(error)) {
+    console.warn("ENTRY_SESSION_LEGACY_SCHEMA_FALLBACK");
+
+    const legacyResult = await supabase
+      .from("entry_sessions")
+      .upsert([basePayload], { onConflict: "telegram_user_id" })
+      .select("*")
+      .single();
+
+    data = legacyResult.data;
+    error = legacyResult.error;
+  }
 
   if (error || !data) {
     throw error ?? new Error("Failed to upsert entry session.");
