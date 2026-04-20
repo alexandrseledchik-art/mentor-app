@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { buildDiagnosisDeepLink } from "@/lib/entry/deeplink";
 import { detectEntryIntent, detectEntryMode } from "@/lib/entry/detection";
 import { buildEntryHypothesis } from "@/lib/entry/hypothesis";
+import { shouldRouteWebsiteInputDirectly } from "@/lib/entry/website-routing";
 
 test("entry mode: vague chaos -> problem_first", () => {
   assert.equal(detectEntryMode("у нас хаос"), "problem_first");
@@ -22,6 +23,16 @@ test("entry intent: sales stagnation maps to sales/growth", () => {
 
   assert.equal(intent.primaryIntent, "sales_problem");
   assert.ok(intent.possibleDomains.includes("sales"));
+});
+
+test("entry routing: website input routes directly to diagnosis", async () => {
+  const rawText = "https://dtlinvest.ru/land/";
+  const mode = detectEntryMode(rawText);
+  const intent = detectEntryIntent(rawText, mode);
+
+  assert.equal(mode, "problem_first");
+  assert.equal(intent.primaryIntent, "operations_problem");
+  assert.equal(shouldRouteWebsiteInputDirectly({ mode, rawText }), true);
 });
 
 test("entry hypothesis stays cautious", () => {

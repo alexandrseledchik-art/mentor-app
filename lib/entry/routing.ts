@@ -1,6 +1,7 @@
 import "server-only";
 
 import { buildDiagnosisDeepLink, buildToolDeepLink } from "@/lib/entry/deeplink";
+import { shouldRouteWebsiteInputDirectly } from "@/lib/entry/website-routing";
 import {
   isAffirmativeAnswer,
   isNegativeAnswer,
@@ -86,6 +87,17 @@ export async function decideEntryRouting({
     rawText.toLowerCase().includes("без вопросов") ||
     rawText.toLowerCase().includes("просто скажи") ||
     rawText.toLowerCase().includes("не хочу отвечать");
+
+  if (shouldRouteWebsiteInputDirectly({ mode, rawText })) {
+    return {
+      decision: {
+        ...getDiagnosisDecision(mode, intent, toolMatch.tool),
+        reason: "Пользователь дал сайт, этого достаточно для первичного zero-friction разбора без уточняющих вопросов.",
+      },
+      toolConfidence: toolMatch.confidence,
+      matchedTool: toolMatch.tool,
+    };
+  }
 
   if (mode === "specific_tool_request") {
     if (toolMatch.tool && toolMatch.confidence === "high") {

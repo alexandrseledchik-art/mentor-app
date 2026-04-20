@@ -9,17 +9,22 @@ import { runDiagnosticCore } from "@/lib/diagnostic-core/run-diagnostic-core";
 import type { DiagnosticStructuredResult } from "@/lib/diagnostic-core/schema";
 import { runQuickScan } from "@/lib/quick-scan/run-quick-scan";
 import { getOrCreateTelegramAppUser } from "@/lib/telegram/app-user";
+import {
+  extractWebsiteContextFromText,
+  formatWebsiteContext,
+} from "@/lib/website/extract-website-context";
+import { hasUrl } from "@/lib/url-utils";
 import type { EntryIntent, EntrySessionState, TelegramEntryReply } from "@/types/domain";
 
 function detectQuickScanInputType(text: string): "website" | "text" | "mixed" {
-  const hasUrl = /https?:\/\/|(?:^|\s)[\w-]+\.[a-z]{2,}(?:\/|\s|$)/i.test(text);
+  const textHasUrl = hasUrl(text);
   const hasWords = text.replace(/https?:\/\/\S+|[\w-]+\.[a-z]{2,}\S*/gi, "").trim().length > 0;
 
-  if (hasUrl && hasWords) {
+  if (textHasUrl && hasWords) {
     return "mixed";
   }
 
-  return hasUrl ? "website" : "text";
+  return textHasUrl ? "website" : "text";
 }
 
 function formatList(items: string[], limit: number) {
@@ -107,21 +112,34 @@ export async function runTelegramDiagnosticCase(params: {
         primaryGoal: company.primaryGoal,
       }
     : null;
+  const websiteContext = await extractWebsiteContextFromText(params.workingText);
+  const websiteContextText = formatWebsiteContext(websiteContext);
+  const enrichedInput = websiteContextText
+    ? [
+        params.workingText,
+        "Контекст сайта, автоматически извлечённый для первичного разбора:",
+        websiteContextText,
+      ].join("\n\n")
+    : params.workingText;
 
   const quickScan = await runQuickScan({
-    rawInput: params.workingText,
+    rawInput: enrichedInput,
     inputType: detectQuickScanInputType(params.workingText),
     companyContext,
   });
   const diagnosticResult = await runDiagnosticCore({
-    userMessage: params.workingText,
+    userMessage: enrichedInput,
     companyContext,
     quickScan,
     clarifyingAnswers: params.session.clarifyingAnswers.map((answer) => ({
       question: answer.questionText,
       answer: answer.answerText,
     })),
-    knownFacts: quickScan.likelyLossZones.map((zone) => `${zone.area}: ${zone.whyLikely}`),
+    knownFacts: [
+      ...quickScan.likelyLossZones.map((zone) => `${zone.area}: ${zone.whyLikely}`),
+      ...(websiteContext?.title ? [`Заголовок сайта: ${websiteContext.title}`] : []),
+      ...(websiteContext?.description ? [`Описание сайта: ${websiteContext.description}`] : []),
+    ],
   });
 
   const completion = await completeCase({

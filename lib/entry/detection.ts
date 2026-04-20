@@ -1,4 +1,5 @@
 import type { EntryIntent, EntryMode } from "@/types/domain";
+import { hasUrl } from "@/lib/url-utils";
 
 const TOOL_REQUEST_WORDS = [
   "инструмент",
@@ -54,6 +55,10 @@ export function detectEntryMode(rawText: string): EntryMode {
     return "unclear";
   }
 
+  if (hasUrl(rawText)) {
+    return "problem_first";
+  }
+
   const hasToolLanguage = TOOL_REQUEST_WORDS.some((item) => normalizedText.includes(item));
   const hasSpecificTool = SPECIFIC_TOOL_WORDS.some((item) => normalizedText.includes(item));
 
@@ -99,6 +104,15 @@ export function detectEntryIntent(rawText: string, mode: EntryMode): EntryIntent
       primaryIntent: "tool_request",
       possibleDomains,
       confidence: possibleDomains.length > 0 ? "medium" : "low",
+    };
+  }
+
+  if (hasUrl(rawText)) {
+    return {
+      rawText,
+      primaryIntent: "operations_problem",
+      possibleDomains: Array.from(new Set(["operations", "management", ...possibleDomains])).slice(0, 4),
+      confidence: "medium",
     };
   }
 
