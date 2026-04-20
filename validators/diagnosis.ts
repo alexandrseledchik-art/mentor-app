@@ -161,6 +161,12 @@ export const entryIntentSchema = z.object({
   confidence: z.enum(["low", "medium", "high"]),
 });
 
+export const entryConversationFrameSchema = z.object({
+  goalHypotheses: z.array(z.string().trim().min(1)).max(4),
+  symptomHints: z.array(z.string().trim().min(1)).max(6),
+  currentDiagnosticFocus: z.string().trim().min(1).nullable(),
+});
+
 export const entrySessionStateSchema = z.object({
   telegramUserId: z.number().int().positive(),
   stage: z.enum(["initial", "clarifying", "ready_for_routing"]),
@@ -168,6 +174,8 @@ export const entrySessionStateSchema = z.object({
   initialMessage: z.string().trim().min(1),
   detectedIntent: entryIntentSchema.nullable(),
   toolConfidence: z.enum(["low", "medium", "high"]).optional(),
+  conversationFrame: entryConversationFrameSchema,
+  activeUnknown: z.string().trim().min(1).nullable(),
   clarifyingAnswers: z.array(
     z.object({
       questionKey: z.string().trim().min(1),

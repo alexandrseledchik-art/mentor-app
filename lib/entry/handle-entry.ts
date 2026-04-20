@@ -2,6 +2,11 @@ import "server-only";
 
 import { buildDiagnosisDeepLink, buildToolDeepLink } from "@/lib/entry/deeplink";
 import {
+  POST_WEBSITE_SCREENING_REQUEST_KEY,
+  POST_WEBSITE_SCREENING_REQUEST_TEXT,
+} from "@/lib/entry/constants";
+import { buildConversationFrame } from "@/lib/entry/conversation-frame";
+import {
   trackEntryCompleted,
   trackEntryDropped,
   trackEntryModeDetected,
@@ -12,6 +17,7 @@ import {
 } from "@/lib/analytics/entry-analytics";
 import { detectEntryIntent, detectEntryMode, normalizeEntryText } from "@/lib/entry/detection";
 import { buildEntryHypothesis } from "@/lib/entry/hypothesis";
+import { planEntryIntake } from "@/lib/entry/intake-planner";
 import { buildTelegramEntryReply } from "@/lib/entry/reply";
 import { decideEntryRouting } from "@/lib/entry/routing";
 import { runTelegramDiagnosticCase } from "@/lib/telegram/diagnostic-case";
@@ -46,6 +52,10 @@ function buildWorkingText(
   currentMessage: string,
 ) {
   if (!session) {
+    return currentMessage;
+  }
+
+  if (session.lastQuestionKey === POST_WEBSITE_SCREENING_REQUEST_KEY) {
     return currentMessage;
   }
 
@@ -115,6 +125,12 @@ export async function handleTelegramEntry(params: {
   const intent = detectEntryIntent(workingText, mode);
   const hypothesis = mode === "problem_first" ? buildEntryHypothesis(intent) : null;
   const turnCount = continueSession && existingSession ? existingSession.turnCount + 1 : 1;
+  const frameState = buildConversationFrame({
+    mode,
+    intent,
+    rawText: workingText,
+    session: continueSession ? existingSession : null,
+  });
 
   if (!continueSession) {
     await trackEntryStarted({
@@ -133,6 +149,14 @@ export async function handleTelegramEntry(params: {
     session: continueSession ? existingSession : null,
   });
 
+  const intakePlan = planEntryIntake({
+    mode,
+    intent,
+    rawText: workingText,
+    turnCount,
+    session: continueSession ? existingSession : null,
+  });
+
   const normalizedDecision = normalizeDecision(decisionResult.decision, {
     mode,
     intent: intent.primaryIntent,
@@ -142,6 +166,22 @@ export async function handleTelegramEntry(params: {
       decisionResult.matchedTool?.slug ??
       undefined,
   });
+
+  if (normalizedDecision.action === "ask_question" && !normalizedDecision.nextQuestion) {
+    normalizedDecision.nextQuestion = intakePlan.nextQuestion;
+  }
+
+  if (
+    normalizedDecision.action === "route_to_diagnosis" &&
+    intakePlan.shouldAskBeforeDiagnosis &&
+    intakePlan.nextQuestion
+  ) {
+    normalizedDecision.action = "ask_question";
+    normalizedDecision.nextQuestion = intakePlan.nextQuestion;
+    normalizedDecision.toolSuggestion = undefined;
+    normalizedDecision.reason =
+      "Сигнала уже достаточно для движения вперёд, но один уточняющий вопрос поможет не перепутать цель клиента и корневой симптом.";
+  }
 
   const clarifyingAnswers =
     continueSession && existingSession && existingSession.lastQuestionKey && existingSession.lastQuestionText
@@ -155,9 +195,12 @@ export async function handleTelegramEntry(params: {
         ]
       : [];
 
-  const persistedSession = await upsertEntrySession({
+  const isWebsiteScreening = normalizedDecision.action === "route_to_website_screening";
+
+  let persistedSession = await upsertEntrySession({
     telegramUserId: params.telegramUserId,
     stage:
+      isWebsiteScreening ||
       normalizedDecision.action === "ask_question" ||
       normalizedDecision.action === "confirm_tool_then_route"
         ? "clarifying"
@@ -166,12 +209,20 @@ export async function handleTelegramEntry(params: {
     initialMessage: continueSession && existingSession ? existingSession.initialMessage : text,
     detectedIntent: intent,
     toolConfidence: decisionResult.toolConfidence,
+    conversationFrame: frameState.conversationFrame,
+    activeUnknown: frameState.activeUnknown,
     clarifyingAnswers,
     turnCount,
     createdAt: existingSession?.createdAt ?? new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-    lastQuestionKey: normalizedDecision.nextQuestion?.key ?? null,
-    lastQuestionText: normalizedDecision.nextQuestion?.text ?? null,
+    lastQuestionKey:
+      isWebsiteScreening
+        ? POST_WEBSITE_SCREENING_REQUEST_KEY
+        : normalizedDecision.nextQuestion?.key ?? null,
+    lastQuestionText:
+      isWebsiteScreening
+        ? POST_WEBSITE_SCREENING_REQUEST_TEXT
+        : normalizedDecision.nextQuestion?.text ?? null,
   } as InternalEntrySessionState);
 
   await trackEntryModeDetected({
@@ -205,14 +256,18 @@ export async function handleTelegramEntry(params: {
   }
 
   if (
-    (normalizedDecision.action === "ask_question" ||
+    ((normalizedDecision.action === "ask_question" ||
       normalizedDecision.action === "confirm_tool_then_route") &&
-    normalizedDecision.nextQuestion
+      normalizedDecision.nextQuestion) ||
+    isWebsiteScreening
   ) {
     await trackEntryQuestionAsked({
       telegramUserId: params.telegramUserId,
       session: persistedSession,
-      questionKey: normalizedDecision.nextQuestion.key,
+      questionKey:
+        isWebsiteScreening
+          ? POST_WEBSITE_SCREENING_REQUEST_KEY
+          : (normalizedDecision.nextQuestion?.key ?? POST_WEBSITE_SCREENING_REQUEST_KEY),
     });
   }
 

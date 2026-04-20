@@ -1,5 +1,5 @@
 import type { EntryIntent, EntryMode } from "@/types/domain";
-import { hasNonUrlText, hasUrl } from "@/lib/url-utils";
+import { hasNonUrlText, hasUrl, stripUrls } from "@/lib/url-utils";
 
 const TOOL_REQUEST_WORDS = [
   "инструмент",
@@ -20,9 +20,9 @@ const SPECIFIC_TOOL_WORDS = ["raci", "swot", "sipoc", "okr", "kpi", "юнит-э
 
 const DOMAIN_KEYWORDS: Record<string, string[]> = {
   sales: ["продаж", "лид", "ворон", "конверс", "сделк", "оффер"],
-  management: ["хаос", "управл", "решени", "собственник", "делег", "приоритет"],
+  management: ["хаос", "управл", "решени", "собственник", "делег", "приоритет", "продать бизнес"],
   team: ["команд", "роль", "роли", "ответствен", "найм", "люди"],
-  finance: ["деньги", "финанс", "маржа", "кассов", "прибыль", "cac", "ltv"],
+  finance: ["деньги", "финанс", "маржа", "кассов", "прибыль", "cac", "ltv", "оценк", "инвестор"],
   operations: ["процесс", "операци", "срок", "ручн", "стык", "процессы"],
   growth: ["рост", "масштаб", "стагнац", "не растем", "не растет"],
 };
@@ -49,13 +49,17 @@ function getMatchedDomains(normalizedText: string) {
 }
 
 export function detectEntryMode(rawText: string): EntryMode {
-  const normalizedText = normalize(rawText);
+  const sourceText =
+    hasUrl(rawText) && hasNonUrlText(rawText)
+      ? stripUrls(rawText)
+      : rawText;
+  const normalizedText = normalize(sourceText);
 
   if (!normalizedText) {
     return "unclear";
   }
 
-  if (hasUrl(rawText)) {
+  if (hasUrl(rawText) && !hasNonUrlText(rawText)) {
     return "problem_first";
   }
 
@@ -76,7 +80,10 @@ export function detectEntryMode(rawText: string): EntryMode {
     normalizedText.includes("не работает") ||
     normalizedText.includes("не раст") ||
     normalizedText.includes("хаос") ||
-    normalizedText.includes("просед");
+    normalizedText.includes("просед") ||
+    normalizedText.includes("продать бизнес") ||
+    normalizedText.includes("подготовить к продаже") ||
+    normalizedText.includes("привлечь инвестора");
 
   if (hasPainLanguage || getMatchedDomains(normalizedText).length > 0) {
     return "problem_first";
@@ -86,7 +93,11 @@ export function detectEntryMode(rawText: string): EntryMode {
 }
 
 export function detectEntryIntent(rawText: string, mode: EntryMode): EntryIntent {
-  const normalizedText = normalize(rawText);
+  const sourceText =
+    hasUrl(rawText) && hasNonUrlText(rawText)
+      ? stripUrls(rawText)
+      : rawText;
+  const normalizedText = normalize(sourceText);
   const possibleDomains = getMatchedDomains(normalizedText).slice(0, 4);
 
   if (!normalizedText) {

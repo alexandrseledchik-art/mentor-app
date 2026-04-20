@@ -8,6 +8,8 @@ import {
   shouldRouteWebsiteInputDirectly,
   shouldRouteWebsiteInputToScreening,
 } from "@/lib/entry/website-routing";
+import { planEntryIntake } from "@/lib/entry/intake-planner";
+import { buildConversationFrame } from "@/lib/entry/conversation-frame";
 
 test("entry mode: vague chaos -> problem_first", () => {
   assert.equal(detectEntryMode("у нас хаос"), "problem_first");
@@ -48,6 +50,73 @@ test("entry routing: URL with business pain can route to diagnosis", () => {
   assert.equal(intent.primaryIntent, "sales_problem");
   assert.equal(shouldRouteWebsiteInputToScreening({ rawText }), false);
   assert.equal(shouldRouteWebsiteInputDirectly({ mode, rawText }), true);
+});
+
+test("entry mode: sale request maps to problem_first", () => {
+  const mode = detectEntryMode("хочу продать бизнес");
+  const intent = detectEntryIntent("хочу продать бизнес", mode);
+
+  assert.equal(mode, "problem_first");
+  assert.notEqual(intent.primaryIntent, "unclear");
+});
+
+test("entry mode: URL plus specific tool keeps tool intent", () => {
+  const rawText = "https://example.com мне нужен RACI";
+  const mode = detectEntryMode(rawText);
+  const intent = detectEntryIntent(rawText, mode);
+
+  assert.equal(mode, "specific_tool_request");
+  assert.equal(intent.primaryIntent, "tool_request");
+});
+
+test("intake planner asks a sale-specific question before diagnosis", () => {
+  const rawText = "хочу продать бизнес";
+  const mode = detectEntryMode(rawText);
+  const intent = detectEntryIntent(rawText, mode);
+
+  const plan = planEntryIntake({
+    mode,
+    intent,
+    rawText,
+    turnCount: 1,
+    session: null,
+  });
+
+  assert.equal(plan.shouldAskBeforeDiagnosis, true);
+  assert.match(plan.nextQuestion?.text ?? "", /мешает продаже|стоп-фактор/i);
+});
+
+test("intake planner does not force extra question when symptom is already present", () => {
+  const rawText = "хочу продать бизнес, но у нас непрозрачные цифры и все завязано на собственнике";
+  const mode = detectEntryMode(rawText);
+  const intent = detectEntryIntent(rawText, mode);
+
+  const plan = planEntryIntake({
+    mode,
+    intent,
+    rawText,
+    turnCount: 1,
+    session: null,
+  });
+
+  assert.equal(plan.shouldAskBeforeDiagnosis, false);
+});
+
+test("conversation frame keeps goal and symptom focus for sale request", () => {
+  const rawText = "хочу продать бизнес, но цифры непрозрачные и все держится на собственнике";
+  const mode = detectEntryMode(rawText);
+  const intent = detectEntryIntent(rawText, mode);
+
+  const frame = buildConversationFrame({
+    mode,
+    intent,
+    rawText,
+    session: null,
+  });
+
+  assert.ok(frame.conversationFrame.goalHypotheses.length >= 1);
+  assert.ok(frame.conversationFrame.symptomHints.length >= 1);
+  assert.equal(frame.activeUnknown, "constraint_probe");
 });
 
 test("entry hypothesis stays cautious", () => {

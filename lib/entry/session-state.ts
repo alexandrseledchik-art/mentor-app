@@ -3,6 +3,7 @@ import "server-only";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import type { Database, Json } from "@/types/db";
 import type {
+  EntryConversationFrame,
   EntryIntent,
   EntryMode,
   EntrySessionState,
@@ -18,6 +19,12 @@ export type InternalEntrySessionState = EntrySessionState & {
   lastQuestionText: string | null;
 };
 
+const EMPTY_CONVERSATION_FRAME: EntryConversationFrame = {
+  goalHypotheses: [],
+  symptomHints: [],
+  currentDiagnosticFocus: null,
+};
+
 function mapEntrySession(row: EntrySessionRow): InternalEntrySessionState {
   const clarifyingAnswers = Array.isArray(row.clarifying_answers)
     ? row.clarifying_answers
@@ -30,6 +37,28 @@ function mapEntrySession(row: EntrySessionRow): InternalEntrySessionState {
         .filter((item) => item.questionKey && item.questionText && item.answerText)
     : [];
 
+  const conversationFrame =
+    row.conversation_frame && typeof row.conversation_frame === "object"
+      ? {
+          goalHypotheses: Array.isArray((row.conversation_frame as { goalHypotheses?: unknown }).goalHypotheses)
+            ? ((row.conversation_frame as { goalHypotheses?: unknown[] }).goalHypotheses ?? [])
+                .map((item) => String(item ?? "").trim())
+                .filter(Boolean)
+                .slice(0, 4)
+            : [],
+          symptomHints: Array.isArray((row.conversation_frame as { symptomHints?: unknown }).symptomHints)
+            ? ((row.conversation_frame as { symptomHints?: unknown[] }).symptomHints ?? [])
+                .map((item) => String(item ?? "").trim())
+                .filter(Boolean)
+                .slice(0, 6)
+            : [],
+          currentDiagnosticFocus:
+            typeof (row.conversation_frame as { currentDiagnosticFocus?: unknown }).currentDiagnosticFocus === "string"
+              ? String((row.conversation_frame as { currentDiagnosticFocus?: unknown }).currentDiagnosticFocus)
+              : null,
+        }
+      : EMPTY_CONVERSATION_FRAME;
+
   return {
     telegramUserId: row.telegram_user_id,
     stage: row.stage as EntrySessionState["stage"],
@@ -40,6 +69,8 @@ function mapEntrySession(row: EntrySessionRow): InternalEntrySessionState {
         ? (row.detected_intent as unknown as EntryIntent)
         : null,
     toolConfidence: (row.tool_confidence as ToolConfidence | null) ?? undefined,
+    conversationFrame,
+    activeUnknown: row.active_unknown,
     clarifyingAnswers,
     turnCount: row.turn_count,
     lastQuestionKey: row.last_question_key,
@@ -78,6 +109,8 @@ export async function upsertEntrySession(state: EntrySessionState) {
       last_question_text: internalState.lastQuestionText ?? null,
       detected_intent: (state.detectedIntent ?? null) as Json,
       tool_confidence: state.toolConfidence ?? null,
+      conversation_frame: state.conversationFrame as unknown as Json,
+      active_unknown: state.activeUnknown ?? null,
       clarifying_answers: state.clarifyingAnswers as unknown as Json,
       turn_count: state.turnCount,
       updated_at: new Date().toISOString(),

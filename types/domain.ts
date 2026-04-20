@@ -283,6 +283,12 @@ export interface EntryIntent {
 
 export type ToolConfidence = "low" | "medium" | "high";
 
+export interface EntryConversationFrame {
+  goalHypotheses: string[];
+  symptomHints: string[];
+  currentDiagnosticFocus: string | null;
+}
+
 export interface EntrySessionState {
   telegramUserId: number;
   stage: "initial" | "clarifying" | "ready_for_routing";
@@ -290,6 +296,8 @@ export interface EntrySessionState {
   initialMessage: string;
   detectedIntent: EntryIntent | null;
   toolConfidence?: ToolConfidence;
+  conversationFrame: EntryConversationFrame;
+  activeUnknown: string | null;
   clarifyingAnswers: Array<{
     questionKey: string;
     questionText: string;

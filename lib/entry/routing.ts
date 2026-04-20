@@ -30,27 +30,6 @@ type RoutingParams = {
   session: EntrySessionState | null;
 };
 
-function getProblemClarifyingQuestion(intent: EntryIntent | null): EntryRoutingDecision["nextQuestion"] {
-  if (intent?.possibleDomains.includes("sales")) {
-    return {
-      key: "sales_focus",
-      text: "Что сейчас сильнее проседает: лиды, конверсия в продажи или сам оффер?",
-    };
-  }
-
-  return {
-    key: "focus_area",
-    text: "Что сейчас болит сильнее всего: продажи, роли и команда, процессы или финансы?",
-  };
-}
-
-function getToolClarifyingQuestion(): EntryRoutingDecision["nextQuestion"] {
-  return {
-    key: "tool_area",
-    text: "Для какого контура вам нужен инструмент: продажи, роли и ответственность, процессы или финансы?",
-  };
-}
-
 function getDiagnosisDecision(mode: EntryMode, intent: EntryIntent | null, tool?: Tool | null): EntryRoutingDecision {
   return {
     action: "route_to_diagnosis",
@@ -228,7 +207,6 @@ export async function decideEntryRouting({
           ? getDiagnosisDecision(mode, intent)
           : {
               action: "ask_question",
-              nextQuestion: getToolClarifyingQuestion(),
               reason: "Нужна одна короткая развилка, чтобы не увести вас в случайный инструмент.",
             },
       toolConfidence: "low",
@@ -322,7 +300,6 @@ export async function decideEntryRouting({
     return {
       decision: {
         action: "ask_question",
-        nextQuestion: getToolClarifyingQuestion(),
         reason: "Нужен один вопрос, чтобы понять, какой контур вы хотите закрыть инструментом.",
       },
       toolConfidence: "low",
@@ -357,7 +334,6 @@ export async function decideEntryRouting({
     return {
       decision: {
         action: "ask_question",
-        nextQuestion: getProblemClarifyingQuestion(intent),
         reason:
           hypothesis?.uncertaintyNote ??
           "Нужен один короткий вопрос, чтобы не перепутать симптом и корневой контур.",
@@ -378,10 +354,6 @@ export async function decideEntryRouting({
   return {
     decision: {
       action: "ask_question",
-      nextQuestion: {
-        key: "entry_clarify",
-        text: "Вам сейчас важнее понять корень проблемы или сразу подобрать инструмент?",
-      },
       reason: "Входной запрос пока слишком широкий для безопасного маршрута.",
     },
     toolConfidence: toolMatch.confidence,

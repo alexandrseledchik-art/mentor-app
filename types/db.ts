@@ -634,9 +634,11 @@ export interface Database {
       entry_sessions: {
         Row: {
           clarifying_answers: Json;
+          conversation_frame: Json;
           created_at: string;
           detected_intent: Json | null;
           entry_mode: string;
+          active_unknown: string | null;
           id: string;
           initial_message: string;
           last_question_key: string | null;
@@ -649,9 +651,11 @@ export interface Database {
         };
         Insert: {
           clarifying_answers?: Json;
+          conversation_frame?: Json;
           created_at?: string;
           detected_intent?: Json | null;
           entry_mode?: string;
+          active_unknown?: string | null;
           id?: string;
           initial_message: string;
           last_question_key?: string | null;
@@ -664,9 +668,11 @@ export interface Database {
         };
         Update: {
           clarifying_answers?: Json;
+          conversation_frame?: Json;
           created_at?: string;
           detected_intent?: Json | null;
           entry_mode?: string;
+          active_unknown?: string | null;
           id?: string;
           initial_message?: string;
           last_question_key?: string | null;

@@ -40,6 +40,12 @@ export async function markEntryOfferShown(telegramUserId: number) {
     entryMode: "unclear",
     initialMessage: "__entry_offer__",
     detectedIntent: null,
+    conversationFrame: {
+      goalHypotheses: [],
+      symptomHints: [],
+      currentDiagnosticFocus: null,
+    },
+    activeUnknown: null,
     clarifyingAnswers: [],
     turnCount: 1,
     createdAt: now,
