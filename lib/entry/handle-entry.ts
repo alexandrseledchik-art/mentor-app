@@ -16,6 +16,7 @@ import {
   trackEntryStarted,
   trackEntryToolNotFound,
 } from "@/lib/analytics/entry-analytics";
+import { buildCapabilityReply, isCapabilityQuestion } from "@/lib/entry/capability-questions";
 import { detectEntryIntent, detectEntryMode, normalizeEntryText } from "@/lib/entry/detection";
 import { hasEnoughSignalForTelegramDiagnostic } from "@/lib/entry/diagnostic-threshold";
 import { buildEntryHypothesis } from "@/lib/entry/hypothesis";
@@ -50,6 +51,41 @@ function shouldContinueSession(session: InternalEntrySessionState | null) {
 
 function getSessionAgeHours(session: InternalEntrySessionState) {
   return Math.max(1, Math.round((Date.now() - new Date(session.updatedAt).getTime()) / (1000 * 60 * 60)));
+}
+
+function normalize(text: string) {
+  return text
+    .toLowerCase()
+    .replace(/ё/g, "е")
+    .replace(/[^\p{L}\p{N}\s?]+/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function isCapabilityFollowup(
+  session: InternalEntrySessionState | null,
+  text: string,
+) {
+  if (!session) {
+    return false;
+  }
+
+  const previousText = [session.initialMessage, ...session.clarifyingAnswers.map((item) => item.answerText)]
+    .filter(Boolean)
+    .join("\n");
+
+  if (!isCapabilityQuestion(previousText)) {
+    return false;
+  }
+
+  const normalized = normalize(text);
+  return (
+    normalized.includes("ответишь") ||
+    normalized.includes("на мои вопрос") ||
+    normalized.includes("на мой вопрос") ||
+    normalized.includes("ответь") ||
+    normalized.includes("я спросил")
+  );
 }
 
 function buildWorkingText(
@@ -165,6 +201,51 @@ export async function handleTelegramEntry(params: {
   const text = params.text.trim();
   const existingSession = await getEntrySessionByTelegramUserId(params.telegramUserId);
   const continueSession = shouldContinueSession(existingSession);
+
+  if (isCapabilityQuestion(text) || isCapabilityFollowup(continueSession ? existingSession : null, text)) {
+    const mode = "unclear";
+    const intent = detectEntryIntent(text, mode);
+    const now = new Date().toISOString();
+    const session = await upsertEntrySession({
+      telegramUserId: params.telegramUserId,
+      stage: "ready_for_routing",
+      entryMode: mode,
+      initialMessage:
+        continueSession && existingSession
+          ? existingSession.initialMessage
+          : text,
+      detectedIntent: intent,
+      toolConfidence: undefined,
+      conversationFrame: existingSession?.conversationFrame ?? {
+        goalHypotheses: [],
+        symptomHints: [],
+        currentDiagnosticFocus: null,
+      },
+      activeUnknown: "request",
+      clarifyingAnswers: existingSession?.clarifyingAnswers ?? [],
+      turnCount: continueSession && existingSession ? existingSession.turnCount + 1 : 1,
+      createdAt: existingSession?.createdAt ?? now,
+      updatedAt: now,
+      lastQuestionKey: null,
+      lastQuestionText: null,
+    } as InternalEntrySessionState);
+
+    const capabilitySourceText =
+      isCapabilityQuestion(text) || !existingSession
+        ? text
+        : existingSession.initialMessage;
+
+    return {
+      reply: buildCapabilityReply(capabilitySourceText),
+      session,
+      intent,
+      hypothesis: null,
+      decision: {
+        action: "ask_question",
+        reason: "Пользователь задал вопрос о возможностях бота, а не запрос на бизнес-диагностику.",
+      },
+    };
+  }
 
   if (existingSession && !continueSession && existingSession.stage === "clarifying") {
     await trackEntryDropped({

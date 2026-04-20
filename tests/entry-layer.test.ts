@@ -357,6 +357,13 @@ test("core consultant treats colloquial voice capability phrasing as capability 
   assert.equal(result.mode, "capability");
 });
 
+test("capability detector supports follow-up phrasing after a voice question context", () => {
+  assert.equal(
+    isCapabilityQuestion("Ты мне на мой вопрос ответишь?"),
+    false,
+  );
+});
+
 test("core consultant routes URL-only input to website screening", async () => {
   const result = await runCoreEntryConsultant({
     rawText: "https://dtlinvest.ru/land/",
