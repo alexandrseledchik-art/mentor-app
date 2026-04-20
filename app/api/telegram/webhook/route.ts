@@ -1,13 +1,33 @@
 import { NextResponse } from "next/server";
 
 import { handleTelegramEntry } from "@/lib/entry/handle-entry";
-import { sendTelegramEntryReply } from "@/lib/telegram/telegram-bot";
+import {
+  sendTelegramEntryReply,
+  sendTelegramMessage,
+} from "@/lib/telegram/telegram-bot";
 import { markEntryOfferShown, shouldSendEntryOffer } from "@/lib/telegram/entry-session";
 import { sendEntryOffer } from "@/lib/telegram/send-entry-offer";
+import {
+  getTelegramAudioAttachment,
+  transcribeTelegramAudio,
+} from "@/lib/telegram/voice";
 
 type TelegramWebhookUpdate = {
   message?: {
     text?: string;
+    voice?: {
+      file_id?: string;
+      mime_type?: string;
+      duration?: number;
+      file_size?: number;
+    };
+    audio?: {
+      file_id?: string;
+      mime_type?: string;
+      duration?: number;
+      file_size?: number;
+      file_name?: string;
+    };
     chat?: { id?: number };
     from?: {
       id?: number;
@@ -37,15 +57,41 @@ export async function POST(request: Request) {
 
     const body = (await request.json().catch(() => null)) as TelegramWebhookUpdate | null;
     const message = body?.message;
-    const text = message?.text?.trim();
+    let text = message?.text?.trim();
     const chatId = message?.chat?.id;
     const telegramUserId = message?.from?.id;
 
-    if (!text || !chatId || !telegramUserId) {
+    if (!chatId || !telegramUserId) {
       return NextResponse.json({ ok: true, processed: false });
     }
 
-    if (await shouldSendEntryOffer({ telegramUserId, text })) {
+    if (!text && message) {
+      const audioAttachment = getTelegramAudioAttachment(message);
+
+      if (audioAttachment) {
+        text = (await transcribeTelegramAudio(audioAttachment)) ?? undefined;
+
+        if (!text) {
+          await sendTelegramMessage({
+            chatId,
+            text:
+              "Не смог распознать голосовое. Попробуйте отправить ещё раз или напишите коротко текстом, что сейчас не работает.",
+          });
+
+          return NextResponse.json({
+            ok: true,
+            processed: true,
+            stage: "voice_transcription_failed",
+          });
+        }
+      }
+    }
+
+    if (!text) {
+      return NextResponse.json({ ok: true, processed: false });
+    }
+
+    if (message?.text && await shouldSendEntryOffer({ telegramUserId, text })) {
       const sent = await sendEntryOffer(chatId);
 
       if (sent) {
