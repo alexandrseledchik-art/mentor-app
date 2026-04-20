@@ -29,10 +29,10 @@ test("does not use t.me as web deep link base", () => {
   assert.equal(getPublicAppUrl(), "https://mentor-app-blue.vercel.app");
 });
 
-test("uses Vercel URL when explicit public app URL is absent", () => {
+test("does not use Vercel deployment URL for Telegram-facing web links", () => {
   delete process.env.NEXT_PUBLIC_APP_URL;
   delete process.env.NEXT_PUBLIC_MINI_APP_URL;
-  process.env.VERCEL_URL = "mentor-app-blue.vercel.app";
+  process.env.VERCEL_URL = "mentor-3jpnd9gb-aleksandrs-projects.vercel.app";
 
   assert.equal(getPublicAppUrl(), "https://mentor-app-blue.vercel.app");
 });

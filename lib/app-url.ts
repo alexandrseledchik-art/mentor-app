@@ -24,7 +24,6 @@ export function getPublicAppUrl() {
   return (
     normalizeOrigin(process.env.NEXT_PUBLIC_APP_URL) ??
     normalizeOrigin(process.env.NEXT_PUBLIC_MINI_APP_URL) ??
-    normalizeOrigin(process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined) ??
     FALLBACK_APP_URL
   );
 }
