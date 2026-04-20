@@ -4,6 +4,8 @@ type DiagnosisDeepLinkParams = {
   entryMode?: string;
   entryIntent?: string;
   suggestedTool?: string;
+  intakeGoal?: string | null;
+  intakeSymptoms?: string[];
 };
 
 export function buildDiagnosisDeepLink(params: DiagnosisDeepLinkParams = {}) {
@@ -21,6 +23,14 @@ export function buildDiagnosisDeepLink(params: DiagnosisDeepLinkParams = {}) {
 
   if (params.suggestedTool) {
     url.searchParams.set("suggested_tool", params.suggestedTool);
+  }
+
+  if (params.intakeGoal) {
+    url.searchParams.set("intake_goal", params.intakeGoal);
+  }
+
+  if (params.intakeSymptoms?.length) {
+    url.searchParams.set("intake_symptoms", params.intakeSymptoms.slice(0, 3).join("|"));
   }
 
   return url.toString();

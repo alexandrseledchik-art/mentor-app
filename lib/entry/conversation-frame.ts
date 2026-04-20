@@ -92,18 +92,26 @@ function determineCurrentDiagnosticFocus(params: {
   previousFocus: string | null;
 }) {
   if (params.goalHypotheses.length > 0 && params.symptomHints.length === 0) {
-    return "goal_to_symptom";
+    return "symptom_collection";
+  }
+
+  if (params.previousFocus === "symptom_collection" && params.symptomHints.length > 0) {
+    return "hypothesis_split";
+  }
+
+  if (params.symptomHints.length > 0 && params.intent?.confidence === "low") {
+    return "hypothesis_split";
   }
 
   if (params.symptomHints.length > 0 && params.intent?.confidence !== "high") {
-    return "symptom_to_constraint";
+    return "constraint_probe";
   }
 
   if (params.intent?.primaryIntent === "tool_request") {
-    return "task_to_tool";
+    return "tool_navigation";
   }
 
-  return params.previousFocus ?? "request_clarification";
+  return params.previousFocus ?? "goal_clarification";
 }
 
 function determineActiveUnknown(params: {
@@ -133,6 +141,10 @@ function determineActiveUnknown(params: {
 
   if (params.symptomHints.length === 0) {
     return "main_symptom";
+  }
+
+  if (params.mode === "problem_first" && params.session?.conversationFrame?.currentDiagnosticFocus === "symptom_collection") {
+    return "hypothesis_split";
   }
 
   if (params.mode === "tool_discovery") {

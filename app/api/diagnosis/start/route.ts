@@ -358,7 +358,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { companyId, questionSetCode = "express_v1" } = parsed.data;
+  const { companyId, questionSetCode = "express_v1", intakeContext } = parsed.data;
   let questionSetResult;
 
   try {
@@ -420,6 +420,8 @@ export async function POST(request: Request) {
   let source: string | null = null;
   let entryMode: string | null = null;
   let entryIntent: string | null = null;
+  let refererIntakeGoal: string | null = null;
+  let refererIntakeSymptoms: string[] = [];
 
   if (referer) {
     try {
@@ -427,12 +429,33 @@ export async function POST(request: Request) {
       source = refererUrl.searchParams.get("source");
       entryMode = refererUrl.searchParams.get("entry_mode");
       entryIntent = refererUrl.searchParams.get("entry_intent");
+      refererIntakeGoal = refererUrl.searchParams.get("intake_goal");
+      refererIntakeSymptoms = (refererUrl.searchParams.get("intake_symptoms") ?? "")
+        .split("|")
+        .map((item) => item.trim())
+        .filter(Boolean)
+        .slice(0, 4);
     } catch {
       source = null;
       entryMode = null;
       entryIntent = null;
+      refererIntakeGoal = null;
+      refererIntakeSymptoms = [];
     }
   }
+
+  const resolvedIntakeContext =
+    intakeContext?.source === "telegram_diagnostic_intake" ||
+    refererIntakeGoal ||
+    refererIntakeSymptoms.length > 0
+      ? {
+          source: "telegram_diagnostic_intake" as const,
+          goal: intakeContext?.goal ?? refererIntakeGoal ?? null,
+          symptoms:
+            intakeContext?.symptoms?.slice(0, 4) ??
+            refererIntakeSymptoms,
+        }
+      : null;
 
   await trackDiagnosisStarted({
     userId: currentAppUser.id,
@@ -449,6 +472,7 @@ export async function POST(request: Request) {
     session: sessionResult.session,
     questionSet: questionSetResult.questionSet,
     questions: questionSetResult.questions,
+    intakeContext: resolvedIntakeContext,
   };
 
   return NextResponse.json(diagnosisStartResponseSchema.parse(payload), {

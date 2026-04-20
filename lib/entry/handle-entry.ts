@@ -6,6 +6,7 @@ import {
   POST_WEBSITE_SCREENING_REQUEST_TEXT,
 } from "@/lib/entry/constants";
 import { buildConversationFrame } from "@/lib/entry/conversation-frame";
+import { runCoreEntryConsultant } from "@/lib/entry/core-consultant";
 import {
   trackEntryCompleted,
   trackEntryDropped,
@@ -16,11 +17,15 @@ import {
   trackEntryToolNotFound,
 } from "@/lib/analytics/entry-analytics";
 import { detectEntryIntent, detectEntryMode, normalizeEntryText } from "@/lib/entry/detection";
+import { hasEnoughSignalForTelegramDiagnostic } from "@/lib/entry/diagnostic-threshold";
 import { buildEntryHypothesis } from "@/lib/entry/hypothesis";
-import { planEntryIntake } from "@/lib/entry/intake-planner";
 import { buildTelegramEntryReply } from "@/lib/entry/reply";
-import { decideEntryRouting } from "@/lib/entry/routing";
 import { runTelegramDiagnosticCase } from "@/lib/telegram/diagnostic-case";
+import { runTelegramDiagnosticIntake } from "@/lib/telegram/diagnostic-intake";
+import {
+  matchToolFromText,
+  suggestClosestAlternativeTool,
+} from "@/lib/entry/tool-matching";
 import { runTelegramWebsiteScreening } from "@/lib/website/website-screening";
 import {
   getEntrySessionByTelegramUserId,
@@ -101,6 +106,55 @@ function normalizeDecision(decision: EntryRoutingDecision, params: {
   return decision;
 }
 
+function buildCoreQuestionReply(params: {
+  understanding: string;
+  question?: string | null;
+}) {
+  return {
+    text: [params.understanding, params.question].filter(Boolean).join("\n\n"),
+    stage: params.question ? ("clarifying" as const) : ("ready_for_routing" as const),
+  };
+}
+
+function mapCoreModeToDecision(params: {
+  coreMode: "capability" | "website_screening" | "tool_navigation" | "ask_question" | "diagnostic_intake" | "diagnostic_result";
+  understanding: string;
+  question?: string | null;
+  mode: string;
+  intent: string;
+}) {
+  if (params.coreMode === "website_screening") {
+    return normalizeDecision(
+      {
+        action: "route_to_website_screening",
+        reason: params.understanding,
+      },
+      params,
+    );
+  }
+
+  if (params.coreMode === "diagnostic_intake" || params.coreMode === "diagnostic_result") {
+    return normalizeDecision(
+      {
+        action: "route_to_diagnosis",
+        reason: params.understanding,
+      },
+      params,
+    );
+  }
+
+  return {
+    action: "ask_question" as const,
+    nextQuestion: params.question
+      ? {
+          key: "core_consultant_question",
+          text: params.question,
+        }
+      : undefined,
+    reason: params.understanding,
+  };
+}
+
 export async function handleTelegramEntry(params: {
   telegramUserId: number;
   telegramUsername?: string | null;
@@ -140,47 +194,77 @@ export async function handleTelegramEntry(params: {
     });
   }
 
-  const decisionResult = await decideEntryRouting({
-    mode,
-    intent,
-    hypothesis,
+  const useLegacyToolRouting = mode === "tool_discovery" || mode === "specific_tool_request";
+  const coreDecision = await runCoreEntryConsultant({
     rawText: workingText,
-    turnCount,
     session: continueSession ? existingSession : null,
   });
 
-  const intakePlan = planEntryIntake({
-    mode,
-    intent,
-    rawText: workingText,
-    turnCount,
-    session: continueSession ? existingSession : null,
-  });
+  let normalizedDecision: EntryRoutingDecision;
+  let toolRoutingContext: {
+    unsupportedToolRequested?: boolean;
+    alternativeToolSlug?: string;
+    toolConfidence?: "low" | "medium" | "high";
+  } | null = null;
 
-  const normalizedDecision = normalizeDecision(decisionResult.decision, {
+  normalizedDecision = mapCoreModeToDecision({
+    coreMode: coreDecision.mode,
+    understanding: coreDecision.understanding,
+    question: coreDecision.question ?? null,
     mode,
     intent: intent.primaryIntent,
-    toolSlug:
-      decisionResult.decision.toolSuggestion?.slug ??
-      decisionResult.alternativeTool?.slug ??
-      decisionResult.matchedTool?.slug ??
-      undefined,
   });
 
-  if (normalizedDecision.action === "ask_question" && !normalizedDecision.nextQuestion) {
-    normalizedDecision.nextQuestion = intakePlan.nextQuestion;
-  }
+  if (coreDecision.mode === "tool_navigation" || useLegacyToolRouting) {
+    const matchedTool = await matchToolFromText(workingText, mode, intent);
+    const alternativeTool = matchedTool.tool
+      ? null
+      : await suggestClosestAlternativeTool(workingText, intent);
 
-  if (
-    normalizedDecision.action === "route_to_diagnosis" &&
-    intakePlan.shouldAskBeforeDiagnosis &&
-    intakePlan.nextQuestion
-  ) {
-    normalizedDecision.action = "ask_question";
-    normalizedDecision.nextQuestion = intakePlan.nextQuestion;
-    normalizedDecision.toolSuggestion = undefined;
-    normalizedDecision.reason =
-      "Сигнала уже достаточно для движения вперёд, но один уточняющий вопрос поможет не перепутать цель клиента и корневой симптом.";
+    toolRoutingContext = {
+      unsupportedToolRequested: !matchedTool.tool,
+      alternativeToolSlug: alternativeTool?.slug,
+      toolConfidence: matchedTool.confidence,
+    };
+
+    if (matchedTool.tool && matchedTool.confidence !== "low") {
+      normalizedDecision = normalizeDecision(
+        {
+          action: "route_to_tool",
+          toolSuggestion: {
+            slug: matchedTool.tool.slug,
+            title: matchedTool.tool.title,
+            url: buildToolDeepLink(matchedTool.tool.slug),
+          },
+          reason: coreDecision.understanding,
+        },
+        {
+          mode,
+          intent: intent.primaryIntent,
+          toolSlug: matchedTool.tool.slug,
+        },
+      );
+    } else if (alternativeTool) {
+      normalizedDecision = {
+        action: "ask_question",
+        nextQuestion: {
+          key: "tool_alternative_question",
+          text: `Точного инструмента по этому запросу у нас нет. Ближайший вариант — «${alternativeTool.title}». Если хотите, напишите, какую задачу нужно решить, и я уточню маршрут.`,
+        },
+        reason: "Нужен ещё один шаг навигации, чтобы не показать случайный инструмент.",
+      };
+    } else {
+      normalizedDecision = normalizeDecision(
+        {
+          action: "route_to_diagnosis",
+          reason: "По текущему описанию безопаснее начать с короткой диагностики, чем угадывать инструмент.",
+        },
+        {
+          mode,
+          intent: intent.primaryIntent,
+        },
+      );
+    }
   }
 
   const clarifyingAnswers =
@@ -195,6 +279,16 @@ export async function handleTelegramEntry(params: {
         ]
       : [];
 
+  const diagnosticThresholdReached = hasEnoughSignalForTelegramDiagnostic({
+    mode,
+    intent,
+    rawText: workingText,
+    turnCount,
+    session: continueSession ? existingSession : null,
+    conversationFrame: frameState.conversationFrame,
+    activeUnknown: frameState.activeUnknown,
+  });
+
   const isWebsiteScreening = normalizedDecision.action === "route_to_website_screening";
 
   let persistedSession = await upsertEntrySession({
@@ -208,7 +302,7 @@ export async function handleTelegramEntry(params: {
     entryMode: mode,
     initialMessage: continueSession && existingSession ? existingSession.initialMessage : text,
     detectedIntent: intent,
-    toolConfidence: decisionResult.toolConfidence,
+    toolConfidence: toolRoutingContext?.toolConfidence,
     conversationFrame: frameState.conversationFrame,
     activeUnknown: frameState.activeUnknown,
     clarifyingAnswers,
@@ -231,13 +325,13 @@ export async function handleTelegramEntry(params: {
     intent,
   });
 
-  if (decisionResult.unsupportedToolRequested) {
+  if (toolRoutingContext?.unsupportedToolRequested) {
     const signal = {
       toolQuery: text,
       normalizedTool: normalizeEntryText(text) || undefined,
       entryMode: mode,
       detectedIntent: intent.primaryIntent,
-      confidence: decisionResult.toolConfidence ?? "low",
+      confidence: toolRoutingContext.toolConfidence ?? "low",
       telegramUserId: params.telegramUserId,
       createdAt: new Date().toISOString(),
     } as const;
@@ -250,8 +344,8 @@ export async function handleTelegramEntry(params: {
       toolQuery: text,
       normalizedTool: normalizeEntryText(text) || undefined,
       detectedIntent: intent.primaryIntent,
-      confidence: decisionResult.toolConfidence ?? "low",
-      alternativeToolSlug: decisionResult.alternativeTool?.slug,
+      confidence: toolRoutingContext.toolConfidence ?? "low",
+      alternativeToolSlug: toolRoutingContext.alternativeToolSlug,
     });
   }
 
@@ -278,11 +372,20 @@ export async function handleTelegramEntry(params: {
     intent,
   });
 
-  let reply = buildTelegramEntryReply({
-    session: persistedSession,
-    decision: normalizedDecision,
-    hypothesis,
-  });
+  let reply =
+    (coreDecision.mode === "capability" || normalizedDecision.action === "ask_question")
+      ? buildCoreQuestionReply({
+          understanding: coreDecision.understanding,
+          question:
+            normalizedDecision.action === "ask_question"
+              ? normalizedDecision.nextQuestion?.text ?? coreDecision.question ?? null
+              : coreDecision.question ?? null,
+        })
+      : buildTelegramEntryReply({
+          session: persistedSession,
+          decision: normalizedDecision,
+          hypothesis,
+        });
 
   if (normalizedDecision.action === "route_to_website_screening") {
     reply = await runTelegramWebsiteScreening({
@@ -296,15 +399,37 @@ export async function handleTelegramEntry(params: {
     });
   } else if (normalizedDecision.action === "route_to_diagnosis") {
     try {
-      reply = await runTelegramDiagnosticCase({
-        telegramUserId: params.telegramUserId,
-        telegramUsername: params.telegramUsername,
-        firstName: params.firstName,
-        lastName: params.lastName,
-        workingText,
-        session: persistedSession,
-        intent,
-      });
+      if (coreDecision.mode === "diagnostic_result") {
+        reply = await runTelegramDiagnosticCase({
+          telegramUserId: params.telegramUserId,
+          telegramUsername: params.telegramUsername,
+          firstName: params.firstName,
+          lastName: params.lastName,
+          workingText,
+          session: persistedSession,
+          intent,
+        });
+      } else if (diagnosticThresholdReached) {
+        reply = await runTelegramDiagnosticCase({
+          telegramUserId: params.telegramUserId,
+          telegramUsername: params.telegramUsername,
+          firstName: params.firstName,
+          lastName: params.lastName,
+          workingText,
+          session: persistedSession,
+          intent,
+        });
+      } else {
+        reply = await runTelegramDiagnosticIntake({
+          telegramUserId: params.telegramUserId,
+          telegramUsername: params.telegramUsername,
+          firstName: params.firstName,
+          lastName: params.lastName,
+          workingText,
+          session: persistedSession,
+          intent,
+        });
+      }
     } catch (error) {
       console.error("TELEGRAM_DIAGNOSTIC_CASE_FAILED", {
         telegramUserId: params.telegramUserId,

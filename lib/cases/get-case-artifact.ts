@@ -37,7 +37,7 @@ export async function getCaseArtifactByShareToken(params: {
     .from("case_artifacts")
     .select("artifact_type, title, summary, content_markdown, created_at")
     .eq("case_id", caseRow.id)
-    .in("artifact_type", ["diagnostic_result", "preliminary_screening"]);
+    .in("artifact_type", ["diagnostic_result", "diagnostic_intake", "preliminary_screening"]);
 
   if (artifactError) {
     throw new Error(`Failed to load case artifact: ${artifactError.message}`);
@@ -49,6 +49,7 @@ export async function getCaseArtifactByShareToken(params: {
 
   const selectedArtifact =
     artifactRow.find((item) => item.artifact_type === "diagnostic_result") ??
+    artifactRow.find((item) => item.artifact_type === "diagnostic_intake") ??
     artifactRow[0];
 
   return {

@@ -300,44 +300,15 @@ export async function decideEntryRouting({
     return {
       decision: {
         action: "ask_question",
-        reason: "Нужен один вопрос, чтобы понять, какой контур вы хотите закрыть инструментом.",
+        reason: "Сначала нужно уточнить задачу, чтобы не подменить навигацию по инструментам случайным совпадением.",
       },
       toolConfidence: "low",
     };
   }
 
   if (mode === "problem_first") {
-    if (answerLooksLikeEscalation) {
-      return {
-        decision: getDiagnosisDecision(mode, intent),
-        toolConfidence: toolMatch.confidence,
-        matchedTool: toolMatch.tool,
-      };
-    }
-
-    if (intent?.confidence === "high" && turnCount <= 2) {
-      return {
-        decision: getDiagnosisDecision(mode, intent, toolMatch.tool),
-        toolConfidence: toolMatch.confidence,
-        matchedTool: toolMatch.tool,
-      };
-    }
-
-    if (turnCount >= 3) {
-      return {
-        decision: getDiagnosisDecision(mode, intent, toolMatch.tool),
-        toolConfidence: toolMatch.confidence,
-        matchedTool: toolMatch.tool,
-      };
-    }
-
     return {
-      decision: {
-        action: "ask_question",
-        reason:
-          hypothesis?.uncertaintyNote ??
-          "Нужен один короткий вопрос, чтобы не перепутать симптом и корневой контур.",
-      },
+      decision: getDiagnosisDecision(mode, intent, toolMatch.tool),
       toolConfidence: toolMatch.confidence,
       matchedTool: toolMatch.tool,
     };

@@ -130,7 +130,7 @@ export async function getCaseHistoryByUserId(
     .from("case_artifacts")
     .select("artifact_type, case_id, title, summary")
     .in("case_id", caseIds)
-    .in("artifact_type", ["diagnostic_result", "preliminary_screening"]);
+    .in("artifact_type", ["diagnostic_result", "diagnostic_intake", "preliminary_screening"]);
 
   if (artifactError) {
     throw new Error(`Failed to load case artifacts: ${artifactError.message}`);
@@ -142,7 +142,11 @@ export async function getCaseHistoryByUserId(
     const artifact = row as ArtifactRow;
     const existing = artifacts.get(artifact.case_id);
 
-    if (!existing || artifact.artifact_type === "diagnostic_result") {
+    if (
+      !existing ||
+      artifact.artifact_type === "diagnostic_result" ||
+      (artifact.artifact_type === "diagnostic_intake" && existing.artifact_type === "preliminary_screening")
+    ) {
       artifacts.set(artifact.case_id, artifact);
     }
   }

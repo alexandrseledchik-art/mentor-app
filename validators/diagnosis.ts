@@ -59,6 +59,13 @@ export const diagnosisSubmitAnswerSchema = z.object({
 export const diagnosisStartRequestSchema = z.object({
   companyId: z.string().uuid().optional(),
   questionSetCode: z.string().min(1).default("express_v1").optional(),
+  intakeContext: z
+    .object({
+      source: z.literal("telegram_diagnostic_intake").optional(),
+      goal: z.string().trim().min(1).nullable().optional(),
+      symptoms: z.array(z.string().trim().min(1)).max(4).optional(),
+    })
+    .optional(),
 });
 
 export const diagnosisStartGetResponseSchema = z.object({
@@ -70,6 +77,14 @@ export const diagnosisStartResponseSchema = z.object({
   session: diagnosisSessionSchema,
   questionSet: diagnosisQuestionSetSchema,
   questions: z.array(diagnosisQuestionSchema),
+  intakeContext: z
+    .object({
+      source: z.literal("telegram_diagnostic_intake"),
+      goal: z.string().trim().min(1).nullable(),
+      symptoms: z.array(z.string().trim().min(1)).max(4),
+    })
+    .nullable()
+    .optional(),
 });
 
 export const diagnosisSubmitRequestSchema = z.object({

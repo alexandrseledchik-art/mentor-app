@@ -1,6 +1,7 @@
 import { POST_WEBSITE_SCREENING_REQUEST_KEY } from "@/lib/entry/constants";
 import { stripUrls } from "@/lib/url-utils";
 import type {
+  EntryConversationFrame,
   EntryIntent,
   EntryMode,
   EntryRoutingDecision,
@@ -13,6 +14,8 @@ type IntakePlannerParams = {
   rawText: string;
   turnCount: number;
   session: EntrySessionState | null;
+  conversationFrame?: EntryConversationFrame | null;
+  activeUnknown?: string | null;
 };
 
 type IntakePlannerResult = {
@@ -138,6 +141,44 @@ function buildToolQuestion() {
   };
 }
 
+function buildHypothesisSplitQuestion(intent: EntryIntent | null, rawText: string) {
+  const text = getWorkingText(rawText);
+  const goalSignal = detectGoalSignal(text);
+
+  if (goalSignal === "sell_business") {
+    return {
+      key: "sell_business_hypothesis_split",
+      text: "Чтобы не спутать симптом с реальным стоп-фактором продажи, уточните: сейчас сильнее мешают непрозрачные цифры, зависимость от собственника, слабая упаковка бизнеса для сделки или нестабильный коммерческий контур?",
+    };
+  }
+
+  if (intent?.possibleDomains.includes("sales")) {
+    return {
+      key: "sales_hypothesis_split",
+      text: "Чтобы развести рабочие гипотезы, уточните: проблема сейчас больше в слабом спросе, в падении конверсии, в неясном оффере или в сбое исполнения продаж?",
+    };
+  }
+
+  if (intent?.possibleDomains.includes("management") || intent?.possibleDomains.includes("team")) {
+    return {
+      key: "management_hypothesis_split",
+      text: "Чтобы не лечить всё сразу, уточните: главный сбой сейчас в ролях и ответственности, в принятии решений, в приоритетах собственника или в ежедневной управляемости?",
+    };
+  }
+
+  if (intent?.possibleDomains.includes("finance")) {
+    return {
+      key: "finance_hypothesis_split",
+      text: "Чтобы понять, где именно искать ограничение, уточните: боль сейчас в кассе, в марже, в непрозрачной экономике направлений или в слабом управленческом учёте?",
+    };
+  }
+
+  return {
+    key: "hypothesis_split",
+    text: "Чтобы развести рабочие версии и не уйти в случайный сценарий, уточните: что сейчас сильнее всего мешает результату — спрос, исполнение, управляемость или прозрачность данных?",
+  };
+}
+
 function buildUnclearQuestion() {
   return {
     key: "request_clarify",
@@ -151,8 +192,8 @@ export function planEntryIntake(params: IntakePlannerParams): IntakePlannerResul
     params.session && "lastQuestionKey" in params.session
       ? params.session.lastQuestionKey === POST_WEBSITE_SCREENING_REQUEST_KEY
       : false;
-  const activeUnknown = params.session?.activeUnknown;
-  const frame = params.session?.conversationFrame;
+  const activeUnknown = params.activeUnknown ?? params.session?.activeUnknown;
+  const frame = params.conversationFrame ?? params.session?.conversationFrame;
 
   if (params.mode === "tool_discovery") {
     return {
@@ -178,6 +219,16 @@ export function planEntryIntake(params: IntakePlannerParams): IntakePlannerResul
       return {
         shouldAskBeforeDiagnosis: true,
         nextQuestion: buildProblemQuestion(params.intent, params.rawText),
+      };
+    }
+
+    if (
+      activeUnknown === "hypothesis_split" ||
+      frame?.currentDiagnosticFocus === "hypothesis_split"
+    ) {
+      return {
+        shouldAskBeforeDiagnosis: true,
+        nextQuestion: buildHypothesisSplitQuestion(params.intent, params.rawText),
       };
     }
 

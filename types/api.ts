@@ -70,12 +70,22 @@ export interface DiagnosisStartGetResponse {
 export interface DiagnosisStartRequest {
   companyId?: string;
   questionSetCode?: string;
+  intakeContext?: {
+    source?: "telegram_diagnostic_intake";
+    goal?: string | null;
+    symptoms?: string[];
+  };
 }
 
 export interface DiagnosisStartResponse {
   session: DiagnosisSession;
   questionSet: DiagnosisQuestionSet;
   questions: DiagnosisQuestion[];
+  intakeContext?: {
+    source: "telegram_diagnostic_intake";
+    goal: string | null;
+    symptoms: string[];
+  } | null;
 }
 
 export interface DiagnosisSubmitRequest {

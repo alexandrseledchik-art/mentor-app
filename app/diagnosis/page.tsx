@@ -21,6 +21,7 @@ export default function DiagnosisPage() {
   const [questions, setQuestions] = useState<DiagnosisQuestion[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<AnswersState>({});
+  const [intakeContext, setIntakeContext] = useState<DiagnosisStartResponse["intakeContext"]>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -48,6 +49,30 @@ export default function DiagnosisPage() {
         questionId: question.id,
         value: values[question.code],
       }));
+  }
+
+  function readIntakeContextFromQuery() {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const goal = params.get("intake_goal");
+    const symptoms = (params.get("intake_symptoms") ?? "")
+      .split("|")
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .slice(0, 4);
+
+    if (!goal && symptoms.length === 0) {
+      return undefined;
+    }
+
+    return {
+      source: "telegram_diagnostic_intake" as const,
+      goal: goal?.trim() || null,
+      symptoms,
+    };
   }
 
   function restoreAnswersFromSnapshot(
@@ -104,8 +129,13 @@ export default function DiagnosisPage() {
           cache: "no-store",
           body: JSON.stringify(
             storedCompanyId
-              ? { companyId: storedCompanyId }
-              : {},
+              ? {
+                  companyId: storedCompanyId,
+                  intakeContext: readIntakeContextFromQuery(),
+                }
+              : {
+                  intakeContext: readIntakeContextFromQuery(),
+                },
           ),
         });
 
@@ -130,6 +160,7 @@ export default function DiagnosisPage() {
         setQuestionSetTitle(startData.questionSet.title);
         setQuestions(startData.questions);
         setAnswers(restoredAnswers);
+        setIntakeContext(startData.intakeContext ?? null);
         setCurrentQuestionIndex(
           resolveInitialQuestionIndex({
             questionCount: startData.questions.length,
@@ -230,8 +261,13 @@ export default function DiagnosisPage() {
           },
           body: JSON.stringify(
             resolvedCompanyId
-              ? { companyId: resolvedCompanyId }
-              : {},
+              ? {
+                  companyId: resolvedCompanyId,
+                  intakeContext: readIntakeContextFromQuery(),
+                }
+              : {
+                  intakeContext: readIntakeContextFromQuery(),
+                },
           ),
         });
 
@@ -248,6 +284,9 @@ export default function DiagnosisPage() {
 
         resolvedSessionId = sessionData.session.id;
         setSessionId(sessionData.session.id);
+        setIntakeContext(
+          "intakeContext" in sessionData ? sessionData.intakeContext ?? null : null,
+        );
       }
 
       if (!resolvedCompanyId) {
@@ -318,6 +357,25 @@ export default function DiagnosisPage() {
       <section className="card">
         <span className="eyebrow">{questionSetTitle || "Диагностика"}</span>
         <p className="muted">{progressLabel}</p>
+        {intakeContext && (intakeContext.goal || intakeContext.symptoms.length > 0) ? (
+          <section className="result-card">
+            <h2>Что уже зафиксировано</h2>
+            {intakeContext.goal ? <p><strong>Цель:</strong> {intakeContext.goal}</p> : null}
+            {intakeContext.symptoms.length > 0 ? (
+              <div>
+                <p><strong>Что уже видно по симптомам:</strong></p>
+                <ul className="plain-list">
+                  {intakeContext.symptoms.map((symptom) => (
+                    <li key={symptom}>{symptom}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            <p className="muted">
+              Диагностика продолжит этот контекст, а не начнётся с пустого листа.
+            </p>
+          </section>
+        ) : null}
         <h1>{currentQuestion.questionText}</h1>
 
         <div className="option-stack">
