@@ -118,8 +118,53 @@ export default async function DashboardPage() {
               <Link href="/tools" className="button-link button-link-secondary">
                 Инструменты
               </Link>
+              <Link href="/cases" className="button-link button-link-secondary">
+                Разборы
+              </Link>
             </div>
           </section>
+
+          {data.companySnapshot ? (
+            <section>
+              <h2>Текущее состояние компании</h2>
+              <div className="result-card">
+                {data.companySnapshot.currentGoal ? (
+                  <p><strong>Цель:</strong> {data.companySnapshot.currentGoal}</p>
+                ) : null}
+                {data.companySnapshot.mainConstraint ? (
+                  <p><strong>Главное ограничение:</strong> {data.companySnapshot.mainConstraint}</p>
+                ) : null}
+                {data.companySnapshot.dominantSituation ? (
+                  <p><strong>Ситуация:</strong> {data.companySnapshot.dominantSituation}</p>
+                ) : null}
+                {data.companySnapshot.firstWaveSummary ? (
+                  <p><strong>Первая волна:</strong> {data.companySnapshot.firstWaveSummary}</p>
+                ) : null}
+                <p className="muted">{data.companySnapshot.summary}</p>
+              </div>
+            </section>
+          ) : null}
+
+          {data.latestCase ? (
+            <section>
+              <h2>Последний разбор</h2>
+              <div className="result-card">
+                <h3>{data.latestCase.title}</h3>
+                <p>{data.latestCase.summary}</p>
+                {data.caseHistoryCount > 1 ? (
+                  <p className="muted">Всего сохранённых разборов: {data.caseHistoryCount}</p>
+                ) : null}
+                <div className="action-row">
+                  <Link href={data.latestCase.url} className="button-link">
+                    Открыть последний разбор
+                  </Link>
+                  <Link href="/cases" className="button-link button-link-secondary">
+                    История разборов
+                  </Link>
+                </div>
+              </div>
+            </section>
+          ) : null}
 
           {data.latestResultSnapshot ? (
             <section>

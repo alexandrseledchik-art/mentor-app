@@ -12,6 +12,8 @@ import type {
   DiagnosisSummaryContext,
   DiagnosisResultHistoryItem,
   DiagnosisSession,
+  CaseHistoryItem,
+  CompanySnapshotSummary,
   ResultSnapshotDetail,
   AiResultSummaryResponse,
   AiResultChatRequest,
@@ -53,6 +55,9 @@ export interface DashboardResponse {
   lastCompletedDiagnosis: DiagnosisSession | null;
   latestResultSnapshot: DiagnosisResultHistoryItem | null;
   resultHistoryCount: number;
+  latestCase: CaseHistoryItem | null;
+  caseHistoryCount: number;
+  companySnapshot: CompanySnapshotSummary | null;
   latestDiagnosis: DiagnosisSession | null;
   featuredTools: Tool[];
 }
@@ -120,6 +125,10 @@ export interface ToolsLibraryResponse {
 
 export interface ResultsHistoryResponse {
   items: DiagnosisResultHistoryItem[];
+}
+
+export interface CasesHistoryResponse {
+  items: CaseHistoryItem[];
 }
 
 export interface ResultSnapshotDetailResponse {

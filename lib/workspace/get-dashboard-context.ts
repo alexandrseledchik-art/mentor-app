@@ -1,5 +1,12 @@
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { getLatestResultSnapshotByCompanyId } from "@/lib/diagnosis/get-latest-result-snapshot";
+import {
+  getCaseHistoryCountByUserId,
+  getCompanySnapshotSummary,
+  getLatestCaseByUserId,
+  type CaseHistoryItem,
+  type CompanySnapshotSummary,
+} from "@/lib/cases/get-case-history";
 import type { Database } from "@/types/db";
 import type {
   Company,
@@ -89,6 +96,9 @@ export interface DashboardWorkspaceContext {
   lastCompletedDiagnosis: DiagnosisSession | null;
   latestResultSnapshot: DiagnosisResultHistoryItem | null;
   resultHistoryCount: number;
+  latestCase: CaseHistoryItem | null;
+  caseHistoryCount: number;
+  companySnapshot: CompanySnapshotSummary | null;
 }
 
 export async function getDashboardWorkspaceContext(): Promise<DashboardWorkspaceContext | null> {
@@ -106,9 +116,20 @@ export async function getDashboardWorkspaceContext(): Promise<DashboardWorkspace
   let lastCompletedDiagnosis: DiagnosisSession | null = null;
   let latestResultSnapshot: DiagnosisResultHistoryItem | null = null;
   let resultHistoryCount = 0;
+  let latestCase: CaseHistoryItem | null = null;
+  let caseHistoryCount = 0;
+  let companySnapshot: CompanySnapshotSummary | null = null;
 
   if (workspace.activeCompanyId) {
-    const [{ data: company }, lastCompletedResult, latestSnapshot, historyCountResult] = await Promise.all([
+    const [
+      { data: company },
+      lastCompletedResult,
+      latestSnapshot,
+      historyCountResult,
+      latestCaseResult,
+      caseCountResult,
+      companySnapshotResult,
+    ] = await Promise.all([
       supabase
         .from("companies")
         .select("*")
@@ -126,6 +147,9 @@ export async function getDashboardWorkspaceContext(): Promise<DashboardWorkspace
         .from("result_snapshots")
         .select("*", { count: "exact", head: true })
         .eq("company_id", workspace.activeCompanyId),
+      getLatestCaseByUserId(user.id, workspace.activeCompanyId),
+      getCaseHistoryCountByUserId(user.id, workspace.activeCompanyId),
+      getCompanySnapshotSummary(workspace.activeCompanyId),
     ]);
 
     activeCompany = company ? mapCompany(company as CompanyRow) : null;
@@ -134,6 +158,12 @@ export async function getDashboardWorkspaceContext(): Promise<DashboardWorkspace
       : null;
     latestResultSnapshot = latestSnapshot;
     resultHistoryCount = historyCountResult.count ?? 0;
+    latestCase = latestCaseResult;
+    caseHistoryCount = caseCountResult;
+    companySnapshot = companySnapshotResult;
+  } else {
+    latestCase = await getLatestCaseByUserId(user.id);
+    caseHistoryCount = await getCaseHistoryCountByUserId(user.id);
   }
 
   return {
@@ -144,5 +174,8 @@ export async function getDashboardWorkspaceContext(): Promise<DashboardWorkspace
     lastCompletedDiagnosis,
     latestResultSnapshot,
     resultHistoryCount,
+    latestCase,
+    caseHistoryCount,
+    companySnapshot,
   };
 }

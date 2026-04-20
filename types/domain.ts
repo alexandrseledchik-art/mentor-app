@@ -138,6 +138,34 @@ export interface ResultSnapshotDetail {
   }>;
 }
 
+export interface CaseHistoryItem {
+  caseId: UUID;
+  title: string;
+  summary: string;
+  status: string;
+  source: string;
+  companyId: UUID | null;
+  createdAt: string;
+  updatedAt: string;
+  completedAt: string | null;
+  url: string;
+}
+
+export interface CompanySnapshotSummary {
+  companyId: UUID;
+  currentGoal: string | null;
+  mainConstraint: string | null;
+  dominantSituation: string | null;
+  firstWaveSummary: string | null;
+  toolRecommendations: Array<{
+    title: string;
+    reasonNow?: string;
+    taskSolved?: string;
+  }>;
+  summary: string;
+  updatedAt: string;
+}
+
 export interface AiResultInterpretationContext {
   company: {
     id: string;
