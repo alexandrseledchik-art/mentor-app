@@ -1,5 +1,7 @@
 import "server-only";
 
+import { randomBytes } from "node:crypto";
+
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 
 import { mapCaseRow } from "./mappers";
@@ -20,6 +22,8 @@ export async function createCase(params: {
     throw new Error("Case initial message cannot be empty.");
   }
 
+  const publicShareToken = randomBytes(18).toString("hex");
+
   const { data, error } = await supabase
     .from("cases")
     .insert({
@@ -28,6 +32,7 @@ export async function createCase(params: {
       workspace_id: params.workspaceId ?? null,
       source: params.source ?? "telegram",
       initial_message: initialMessage,
+      public_share_token: publicShareToken,
       current_stage: params.currentStage ?? "quick_scan",
     })
     .select("*")
