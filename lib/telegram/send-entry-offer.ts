@@ -2,12 +2,12 @@ import "server-only";
 
 import { sendTelegramMessage } from "@/lib/telegram/telegram-bot";
 
-export const TELEGRAM_ENTRY_OFFER_TEXT = `Покажу, где в твоём бизнесе теряются деньги
-и что с этим делать.
+export const TELEGRAM_ENTRY_OFFER_TEXT = `За 3 минуты покажу, где бизнес теряет деньги, время и управляемость — и что делать первым.
 
+Достаточно сайта или пары фраз о ситуации.
 Без воды и “успешного успеха”.
 
-Напиши, что сейчас не работает 👇`;
+Напишите, что сейчас не работает 👇`;
 
 export async function sendEntryOffer(chatId: number) {
   return sendTelegramMessage({
