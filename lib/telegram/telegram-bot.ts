@@ -1,6 +1,38 @@
 import "server-only";
 
+import { getPublicAppUrl } from "@/lib/app-url";
+
 import type { TelegramEntryReply } from "@/types/domain";
+
+function shouldOpenAsTelegramWebApp(url: string) {
+  try {
+    const buttonUrl = new URL(url);
+    const appUrl = new URL(getPublicAppUrl());
+
+    return buttonUrl.protocol === "https:" && buttonUrl.origin === appUrl.origin;
+  } catch {
+    return false;
+  }
+}
+
+function buildInlineKeyboardButton(params: {
+  label: string;
+  url: string;
+}) {
+  if (shouldOpenAsTelegramWebApp(params.url)) {
+    return {
+      text: params.label,
+      web_app: {
+        url: params.url,
+      },
+    };
+  }
+
+  return {
+    text: params.label,
+    url: params.url,
+  };
+}
 
 export async function sendTelegramMessage(params: {
   chatId: number;
@@ -28,10 +60,10 @@ export async function sendTelegramMessage(params: {
     body.reply_markup = {
       inline_keyboard: [
         [
-          {
-            text: params.cta.label,
+          buildInlineKeyboardButton({
+            label: params.cta.label,
             url: params.cta.url,
-          },
+          }),
         ],
       ],
     };
