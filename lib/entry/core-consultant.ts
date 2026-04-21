@@ -56,6 +56,16 @@ type CoreEntryConsultantResponse = Omit<
   diagnosticResult: DiagnosticStructuredResult | null;
 };
 
+const CAPABILITY_FACTS = [
+  "Бот принимает обычный текст в Telegram.",
+  "Бот принимает голосовые и audio-сообщения в Telegram через автоматическое распознавание речи в текст.",
+  "Если распознавание голосового не удалось, бот просит отправить сообщение ещё раз или написать коротко текстом.",
+  "Бот умеет анализировать ссылку на сайт и делать только внешний скрининг, если внутреннего бизнес-контекста пока нет.",
+  "Бот умеет принимать изображения из Telegram и использовать их видимый контекст в разборе.",
+  "Основная диагностика происходит прямо в чате Telegram.",
+  "Mini App нужен для хранения, открытия и продолжения уже сохранённых разборов.",
+];
+
 export async function runCoreEntryConsultant(params: {
   rawText: string;
   session: EntrySessionState | null;
@@ -149,6 +159,7 @@ export async function runCoreEntryConsultant(params: {
     action: toolSlug && toolTitle ? "tool_navigation" : routerDecision.action,
     rawText: params.rawText,
     routerReason: routerDecision.routerReason,
+    capabilityFacts: routerDecision.action === "capability" ? CAPABILITY_FACTS : null,
     question: question
       ? {
           text: question,

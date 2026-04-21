@@ -37,7 +37,7 @@ const RENDERER_PROMPT = `Ты — renderer Telegram-ответа.
 - если structured JSON частично пустой, не проговаривай отсутствующие разделы
 
 Правила:
-- если action = capability, ответь прямо и коротко
+- если action = capability, ответь прямо и коротко, строго опираясь на capabilityFacts
 - если action = website_screening, коротко покажи:
   - что видно снаружи
   - что стоит проверить
@@ -56,6 +56,8 @@ const RENDERER_PROMPT = `Ты — renderer Telegram-ответа.
 - не дублируй все поля JSON текстом
 - не перечисляй всё, если это не усиливает следующий шаг
 - финальный акцент всегда на лучшем следующем шаге
+- не придумывай ограничения возможностей бота, которых нет в capabilityFacts
+- если capabilityFacts говорят, что голосовые принимаются через распознавание, не пиши, что бот понимает только текст
 
 Верни только replyText в JSON.`;
 
@@ -67,6 +69,7 @@ export async function runReplyRenderer(params: {
     text: string;
     whyThisQuestion: string;
   } | null;
+  capabilityFacts?: string[] | null;
   tool?: {
     slug: string;
     title: string;

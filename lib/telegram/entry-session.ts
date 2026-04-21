@@ -1,5 +1,6 @@
 import "server-only";
 
+import { buildEntryOfferSessionState } from "@/lib/entry/offer-session-state";
 import {
   getEntrySessionByTelegramUserId,
   type InternalEntrySessionState,
@@ -26,23 +27,6 @@ export async function shouldSendEntryOffer(params: {
 }
 
 export async function markEntryOfferShown(telegramUserId: number) {
-  const existingSession = await getEntrySessionByTelegramUserId(telegramUserId);
-
-  if (existingSession) {
-    return existingSession;
-  }
-
   const now = new Date().toISOString();
-
-  return upsertEntrySession({
-    telegramUserId,
-    stage: "initial",
-    initialMessage: "__entry_offer__",
-    clarifyingAnswers: [],
-    turnCount: 1,
-    createdAt: now,
-    updatedAt: now,
-    lastQuestionKey: null,
-    lastQuestionText: null,
-  } as InternalEntrySessionState);
+  return upsertEntrySession(buildEntryOfferSessionState(telegramUserId, now) as InternalEntrySessionState);
 }
