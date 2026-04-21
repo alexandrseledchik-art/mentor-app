@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import { buildDiagnosisDeepLink } from "@/lib/entry/deeplink";
 import { buildEntryOfferSessionState } from "@/lib/entry/offer-session-state";
+import { buildWorkingText } from "@/lib/entry/working-text";
 
 test("diagnosis deeplink includes telegram metadata", () => {
   const url = buildDiagnosisDeepLink({
@@ -33,4 +34,24 @@ test("/start resets entry session to a fresh offer state", () => {
   assert.equal(state.turnCount, 1);
   assert.equal(state.lastQuestionKey, null);
   assert.equal(state.lastQuestionText, null);
+});
+
+test("website follow-up context marks link as reference, not ownership proof", () => {
+  const workingText = buildWorkingText(
+    {
+      initialMessage: "https://supabase.com/",
+      lastQuestionKey: "core_consultant_question",
+      clarifyingAnswers: [
+        {
+          questionKey: "post_website_screening_request",
+          answerText: "Хочу продать бизнес",
+        },
+      ],
+    },
+    "Тот на который прислал ссылку",
+  );
+
+  assert.match(workingText, /объект внешнего разбора/i);
+  assert.match(workingText, /Не считай это подтверждением/i);
+  assert.match(workingText, /https:\/\/supabase\.com\//i);
 });

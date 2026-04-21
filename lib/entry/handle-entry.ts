@@ -20,6 +20,7 @@ import {
   upsertEntrySession,
   type InternalEntrySessionState,
 } from "@/lib/entry/session-state";
+import { buildWorkingText } from "@/lib/entry/working-text";
 import type { TelegramEntryResponse } from "@/types/api";
 import type { EntryRoutingDecision, TelegramEntryReply } from "@/types/domain";
 
@@ -34,27 +35,6 @@ function shouldContinueSession(session: InternalEntrySessionState | null) {
 
 function getSessionAgeHours(session: InternalEntrySessionState) {
   return Math.max(1, Math.round((Date.now() - new Date(session.updatedAt).getTime()) / (1000 * 60 * 60)));
-}
-
-function buildWorkingText(
-  session: InternalEntrySessionState | null,
-  currentMessage: string,
-) {
-  if (!session) {
-    return currentMessage;
-  }
-
-  if (session.lastQuestionKey === POST_WEBSITE_SCREENING_REQUEST_KEY) {
-    return currentMessage;
-  }
-
-  return [
-    session.initialMessage,
-    ...session.clarifyingAnswers.map((item) => item.answerText),
-    currentMessage,
-  ]
-    .filter(Boolean)
-    .join("\n");
 }
 
 function normalizeDecision(decision: EntryRoutingDecision, params: {

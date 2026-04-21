@@ -217,14 +217,6 @@ export async function POST(request: Request) {
       message: error instanceof Error ? error.message : "unknown_error",
     });
 
-    if (chatId) {
-      await sendTelegramMessage({
-        chatId,
-        text:
-          "Не удалось обработать сообщение с первого раза. Попробуйте отправить ещё раз или напишите коротко текстом, что хотите разобрать.",
-      });
-    }
-
     return NextResponse.json({ ok: false, processed: false }, { status: 500 });
   }
 }
