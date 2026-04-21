@@ -1,27 +1,30 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { buildDiagnosticFallback } from "@/lib/diagnostic-core/fallback";
 import { formatDiagnosticSummary } from "@/lib/diagnostic-core/format-summary";
 import { diagnosticStructuredResultSchema } from "@/lib/diagnostic-core/schema";
+import { buildDiagnosticResultFixture } from "@/tests/fixtures/diagnostic-result";
 
-const sampleInput = {
-  userMessage: "У нас просели продажи, команда работает хаотично, и я не понимаю, что делать первым.",
-  companyContext: {
-    name: "Example",
-    industry: "Услуги",
-  },
-};
+const result = buildDiagnosticResultFixture();
 
-test("diagnostic fallback validates schema", () => {
-  const result = buildDiagnosticFallback(sampleInput);
-
+test("diagnostic structured result validates schema", () => {
   assert.doesNotThrow(() => diagnosticStructuredResultSchema.parse(result));
 });
 
-test("diagnostic result separates facts interpretations and hypotheses", () => {
-  const result = buildDiagnosticFallback(sampleInput);
+test("diagnostic schema allows conditional depth", () => {
+  const shallowResult = buildDiagnosticResultFixture({
+    causeContours: [],
+    dominantSituations: [],
+    hypothesisChecks: [],
+    secondWave: null,
+    doNotDoNow: [],
+    toolRecommendations: [],
+  });
 
+  assert.doesNotThrow(() => diagnosticStructuredResultSchema.parse(shallowResult));
+});
+
+test("diagnostic result separates facts interpretations and hypotheses", () => {
   assert.ok(result.confidenceMap.facts.length >= 1);
   assert.ok(result.confidenceMap.interpretations.length >= 1);
   assert.ok(result.confidenceMap.workingHypotheses.length >= 1);
@@ -29,15 +32,27 @@ test("diagnostic result separates facts interpretations and hypotheses", () => {
 });
 
 test("diagnostic result has first wave and do-not-do guidance", () => {
-  const result = buildDiagnosticFallback(sampleInput);
-
   assert.ok(result.firstWave.directions.length >= 1);
   assert.ok(result.firstWave.successSignals.length >= 1);
-  assert.ok(result.doNotDoNow.length >= 1);
+});
+
+test("diagnostic summary skips absent optional sections", () => {
+  const shallowResult = buildDiagnosticResultFixture({
+    causeContours: [],
+    dominantSituations: [],
+    hypothesisChecks: [],
+    secondWave: null,
+    doNotDoNow: [],
+  });
+  const summary = formatDiagnosticSummary(shallowResult);
+
+  assert.doesNotMatch(summary, /Контуры причин/);
+  assert.doesNotMatch(summary, /Проверка гипотез/);
+  assert.doesNotMatch(summary, /Вторая волна/);
+  assert.doesNotMatch(summary, /Что не делать сейчас/);
 });
 
 test("diagnostic summary includes required sections", () => {
-  const result = buildDiagnosticFallback(sampleInput);
   const summary = formatDiagnosticSummary(result);
 
   assert.match(summary, /Цель и симптомы/);
@@ -46,7 +61,5 @@ test("diagnostic summary includes required sections", () => {
   assert.match(summary, /Главное ограничение/);
   assert.match(summary, /Проверка гипотез/);
   assert.match(summary, /Первая волна/);
-  assert.match(summary, /Вторая волна/);
-  assert.match(summary, /Что не делать сейчас/);
   assert.match(summary, /Короткий вывод для клиента/);
 });

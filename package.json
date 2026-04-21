@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
     "test:unit": "node --import tsx --test tests/**/*.test.ts",
     "db:seed:symptoms": "ts-node scripts/seed-symptoms-tools.ts"
   },

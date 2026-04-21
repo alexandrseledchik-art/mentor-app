@@ -1,20 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { buildDiagnosticFallback } from "@/lib/diagnostic-core/fallback";
 import {
   buildCaseArtifactPayload,
   buildCaseToolRecommendationPayloads,
   buildCompanySnapshotPayload,
   inferCaseConfidenceLevel,
 } from "@/lib/cases/case-result-payloads";
+import { buildDiagnosticResultFixture } from "@/tests/fixtures/diagnostic-result";
 
-const result = buildDiagnosticFallback({
-  userMessage: "Продажи просели, команда занята, но результата нет.",
-  companyContext: {
-    name: "Example",
-  },
-});
+const result = buildDiagnosticResultFixture();
 
 test("case artifact payload keeps human-readable diagnostic result", () => {
   const artifact = buildCaseArtifactPayload(result);
@@ -35,11 +30,38 @@ test("company snapshot payload extracts current company state", () => {
 });
 
 test("case tool recommendations are bounded and normalized", () => {
-  const tools = buildCaseToolRecommendationPayloads(result);
+  const tools = buildCaseToolRecommendationPayloads(
+    buildDiagnosticResultFixture({
+      toolRecommendations: [
+        {
+          title: "RACI",
+          reasonNow: "Помогает снять путаницу в ролях",
+          taskSolved: "Фиксирует зоны ответственности",
+          whyNotSecondary: "Сейчас это бьёт прямо в ограничение",
+        },
+      ],
+    }),
+  );
 
   assert.ok(tools.length >= 1);
   assert.ok(tools.length <= 4);
   assert.ok(tools.every((tool) => tool.toolTitle && tool.reasonNow && tool.taskSolved));
+});
+
+test("case payloads stay stable without optional diagnostic extras", () => {
+  const shallowResult = buildDiagnosticResultFixture({
+    dominantSituations: [],
+    toolRecommendations: [],
+    doNotDoNow: [],
+    secondWave: null,
+  });
+
+  const snapshot = buildCompanySnapshotPayload(shallowResult);
+  const tools = buildCaseToolRecommendationPayloads(shallowResult);
+
+  assert.equal(snapshot.dominantSituation, null);
+  assert.deepEqual(snapshot.toolRecommendations, []);
+  assert.deepEqual(tools, []);
 });
 
 test("case confidence is explicit and conservative", () => {

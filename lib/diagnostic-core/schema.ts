@@ -75,7 +75,8 @@ export const diagnosticStructuredResultSchema = z.object({
         basis: z.string().trim().min(1),
       }),
     )
-    .min(1),
+    .max(4)
+    .default([]),
   confidenceMap: z.object({
     facts: z.array(z.string().trim().min(1)),
     interpretations: z.array(z.string().trim().min(1)),
@@ -97,8 +98,8 @@ export const diagnosticStructuredResultSchema = z.object({
         constraintEffect: z.string().trim().min(1),
       }),
     )
-    .min(1)
-    .max(3),
+    .max(3)
+    .default([]),
   hypothesisChecks: z
     .array(
       z.object({
@@ -108,7 +109,8 @@ export const diagnosticStructuredResultSchema = z.object({
         questions: z.array(z.string().trim().min(1)).min(1).max(3),
       }),
     )
-    .min(1),
+    .max(3)
+    .default([]),
   firstWave: z.object({
     directions: z.array(z.string().trim().min(1)).min(1).max(2),
     expectedChanges: z.array(z.string().trim().min(1)).min(1).max(4),
@@ -116,13 +118,16 @@ export const diagnosticStructuredResultSchema = z.object({
     errorCost: z.string().trim().min(1),
     basis: z.string().trim().min(1),
   }),
-  secondWave: z.object({
-    transitionSignals: z.array(z.string().trim().min(1)).min(1).max(4),
-    whatToConsolidate: z.array(z.string().trim().min(1)).min(1).max(4),
-    nextBottleneckToPrevent: z.array(z.string().trim().min(1)).min(1).max(4),
-    scalingReadiness: z.enum(["premature", "conditional", "ready"]),
-    basis: z.string().trim().min(1),
-  }),
+  secondWave: z
+    .object({
+      transitionSignals: z.array(z.string().trim().min(1)).min(1).max(4),
+      whatToConsolidate: z.array(z.string().trim().min(1)).min(1).max(4),
+      nextBottleneckToPrevent: z.array(z.string().trim().min(1)).min(1).max(4),
+      scalingReadiness: z.enum(["premature", "conditional", "ready"]),
+      basis: z.string().trim().min(1),
+    })
+    .nullable()
+    .default(null),
   doNotDoNow: z
     .array(
       z.object({
@@ -131,8 +136,8 @@ export const diagnosticStructuredResultSchema = z.object({
         whyNotNow: z.string().trim().min(1),
       }),
     )
-    .min(1)
-    .max(5),
+    .max(5)
+    .default([]),
   toolRecommendations: z
     .array(
       z.object({
@@ -142,8 +147,8 @@ export const diagnosticStructuredResultSchema = z.object({
         whyNotSecondary: z.string().trim().min(1),
       }),
     )
-    .min(1)
-    .max(4),
+    .max(4)
+    .default([]),
   clientSummary: z.string().trim().min(1),
 });
 
@@ -195,7 +200,7 @@ export const DIAGNOSTIC_CORE_JSON_SCHEMA = {
     },
     causeContours: {
       type: "array",
-      minItems: 1,
+      maxItems: 4,
       items: {
         type: "object",
         additionalProperties: false,
@@ -251,7 +256,6 @@ export const DIAGNOSTIC_CORE_JSON_SCHEMA = {
     },
     dominantSituations: {
       type: "array",
-      minItems: 1,
       maxItems: 3,
       items: {
         type: "object",
@@ -266,7 +270,6 @@ export const DIAGNOSTIC_CORE_JSON_SCHEMA = {
     },
     hypothesisChecks: {
       type: "array",
-      minItems: 1,
       items: {
         type: "object",
         additionalProperties: false,
@@ -292,20 +295,24 @@ export const DIAGNOSTIC_CORE_JSON_SCHEMA = {
       required: ["directions", "expectedChanges", "successSignals", "errorCost", "basis"],
     },
     secondWave: {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        transitionSignals: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 4 },
-        whatToConsolidate: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 4 },
-        nextBottleneckToPrevent: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 4 },
-        scalingReadiness: { type: "string", enum: ["premature", "conditional", "ready"] },
-        basis: { type: "string" },
-      },
-      required: ["transitionSignals", "whatToConsolidate", "nextBottleneckToPrevent", "scalingReadiness", "basis"],
+      anyOf: [
+        { type: "null" },
+        {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            transitionSignals: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 4 },
+            whatToConsolidate: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 4 },
+            nextBottleneckToPrevent: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 4 },
+            scalingReadiness: { type: "string", enum: ["premature", "conditional", "ready"] },
+            basis: { type: "string" },
+          },
+          required: ["transitionSignals", "whatToConsolidate", "nextBottleneckToPrevent", "scalingReadiness", "basis"],
+        },
+      ],
     },
     doNotDoNow: {
       type: "array",
-      minItems: 1,
       maxItems: 5,
       items: {
         type: "object",
@@ -320,7 +327,6 @@ export const DIAGNOSTIC_CORE_JSON_SCHEMA = {
     },
     toolRecommendations: {
       type: "array",
-      minItems: 1,
       maxItems: 4,
       items: {
         type: "object",
@@ -340,15 +346,9 @@ export const DIAGNOSTIC_CORE_JSON_SCHEMA = {
     "goal",
     "symptoms",
     "situationHypotheses",
-    "causeContours",
     "confidenceMap",
     "constraints",
-    "dominantSituations",
-    "hypothesisChecks",
     "firstWave",
-    "secondWave",
-    "doNotDoNow",
-    "toolRecommendations",
     "clientSummary",
   ],
 } as const;

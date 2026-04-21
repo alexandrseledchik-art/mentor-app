@@ -21,9 +21,9 @@ export function buildCompanySnapshotPayload(result: DiagnosticStructuredResult):
   return {
     currentGoal: result.goal.primary ?? result.goal.hypotheses[0] ?? null,
     mainConstraint: result.constraints.main,
-    dominantSituation: result.dominantSituations[0]?.name ?? null,
+    dominantSituation: (result.dominantSituations ?? [])[0]?.name ?? null,
     firstWaveSummary: result.firstWave.directions.join("; ") || null,
-    toolRecommendations: result.toolRecommendations,
+    toolRecommendations: result.toolRecommendations ?? [],
     summary: result.clientSummary,
   };
 }
@@ -31,7 +31,7 @@ export function buildCompanySnapshotPayload(result: DiagnosticStructuredResult):
 export function buildCaseToolRecommendationPayloads(
   result: DiagnosticStructuredResult,
 ): CaseToolRecommendationPayload[] {
-  return result.toolRecommendations.slice(0, 4).map((tool) => ({
+  return (result.toolRecommendations ?? []).slice(0, 4).map((tool) => ({
     toolTitle: tool.title,
     reasonNow: tool.reasonNow,
     taskSolved: tool.taskSolved,
@@ -45,7 +45,7 @@ export function inferCaseConfidenceLevel(result: DiagnosticStructuredResult) {
     return "low";
   }
 
-  if (result.confidenceMap.facts.length >= 2 && result.confidenceMap.workingHypotheses.length >= 1) {
+  if ((result.confidenceMap?.facts.length ?? 0) >= 2 && (result.confidenceMap?.workingHypotheses.length ?? 0) >= 1) {
     return "medium";
   }
 

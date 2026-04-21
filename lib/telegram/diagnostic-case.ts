@@ -39,17 +39,18 @@ export function buildTelegramDiagnosticSummaryReply(params: {
   }
 
   const mainConstraint = result.constraints.main ?? "главное ограничение пока требует проверки";
-  const tools = result.toolRecommendations
+  const tools = (result.toolRecommendations ?? [])
     .slice(0, 3)
     .map((tool) => `- ${tool.title}: ${tool.reasonNow}`)
     .join("\n");
+  const doNotDoNow = (result.doNotDoNow ?? []).map((item) => item.action);
 
   return {
     text: [
       "Сделал первичный разбор. Это не финальный диагноз, а рабочая управленческая гипотеза по текущему описанию.",
       `Главное ограничение: ${mainConstraint}`,
       `Первая волна:\n${formatList(result.firstWave.directions, 2)}`,
-      `Что не делать сейчас:\n${formatList(result.doNotDoNow.map((item) => item.action), 3)}`,
+      doNotDoNow.length > 0 ? `Что не делать сейчас:\n${formatList(doNotDoNow, 3)}` : null,
       tools ? `Инструменты под это ограничение:\n${tools}` : null,
       `Короткий вывод: ${result.clientSummary}`,
     ]

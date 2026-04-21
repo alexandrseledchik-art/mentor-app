@@ -57,21 +57,25 @@ function postProcessDiagnosticResult(result: DiagnosticStructuredResult) {
   return diagnosticStructuredResultSchema.parse({
     ...result,
     symptoms: result.symptoms.slice(0, 7),
-    dominantSituations: result.dominantSituations.slice(0, 3),
-    doNotDoNow: result.doNotDoNow.slice(0, 5),
-    toolRecommendations: result.toolRecommendations.slice(0, 4),
+    causeContours: (result.causeContours ?? []).slice(0, 4),
+    dominantSituations: (result.dominantSituations ?? []).slice(0, 3),
+    hypothesisChecks: (result.hypothesisChecks ?? []).slice(0, 3),
+    doNotDoNow: (result.doNotDoNow ?? []).slice(0, 5),
+    toolRecommendations: (result.toolRecommendations ?? []).slice(0, 4),
     firstWave: {
       ...result.firstWave,
       directions: result.firstWave.directions.slice(0, 2),
       expectedChanges: result.firstWave.expectedChanges.slice(0, 4),
       successSignals: result.firstWave.successSignals.slice(0, 4),
     },
-    secondWave: {
-      ...result.secondWave,
-      transitionSignals: result.secondWave.transitionSignals.slice(0, 4),
-      whatToConsolidate: result.secondWave.whatToConsolidate.slice(0, 4),
-      nextBottleneckToPrevent: result.secondWave.nextBottleneckToPrevent.slice(0, 4),
-    },
+    secondWave: result.secondWave
+      ? {
+          ...result.secondWave,
+          transitionSignals: result.secondWave.transitionSignals.slice(0, 4),
+          whatToConsolidate: result.secondWave.whatToConsolidate.slice(0, 4),
+          nextBottleneckToPrevent: result.secondWave.nextBottleneckToPrevent.slice(0, 4),
+        }
+      : null,
   });
 }
 
