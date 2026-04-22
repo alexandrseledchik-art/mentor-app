@@ -9,6 +9,19 @@ const GLOBAL_FORMAL_PATTERNS = [
   /\bчтобы продолжить,\s*уточните:\s*/gi,
 ];
 
+const BAD_TONE_PATTERNS = [
+  /Вы хотите/i,
+  /Чтобы помочь/i,
+  /Чтобы продолжить, уточните/i,
+  /какой запрос хотите разобрать дальше/i,
+  /это важный шаг/i,
+  /болтовня/i,
+  /не двинемся/i,
+  /\bч[её]тко\b/i,
+  /расскажите коротко/i,
+  /без понимания/i,
+];
+
 export function buildGreetingOnlyReply(text: string) {
   const normalized = text.trim().toLowerCase();
 
@@ -17,7 +30,7 @@ export function buildGreetingOnlyReply(text: string) {
       normalized,
     )
   ) {
-    return "Давай сразу к делу: что у тебя сейчас буксует сильнее всего — продажи, прибыль, управляемость или подготовка к продаже?";
+    return "Давай быстро поймём, что сейчас важнее всего: продажи, прибыль, порядок в управлении или подготовка к продаже?";
   }
 
   return null;
@@ -72,24 +85,10 @@ export function hasFormalAssistantPhrasing(params: {
 }) {
   const text = params.text;
 
-  if (/Вы хотите/i.test(text)) {
-    return true;
-  }
-
-  if (/Чтобы помочь/i.test(text)) {
-    return true;
-  }
-
-  if (/Чтобы продолжить, уточните/i.test(text)) {
-    return true;
-  }
-
-  if (/какой запрос хотите разобрать дальше/i.test(text)) {
-    return true;
-  }
-
-  if (/это важный шаг/i.test(text)) {
-    return true;
+  for (const pattern of BAD_TONE_PATTERNS) {
+    if (pattern.test(text)) {
+      return true;
+    }
   }
 
   if (params.action === "capability" && /\?\s*$/.test(text.trim())) {

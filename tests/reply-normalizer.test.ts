@@ -38,6 +38,16 @@ test("hasFormalAssistantPhrasing catches assistant-style reply", () => {
   );
 });
 
+test("hasFormalAssistantPhrasing catches aggressive gatekeeping reply", () => {
+  assert.equal(
+    hasFormalAssistantPhrasing({
+      action: "ask_question",
+      text: "Без цели разговор — болтовня. Чётко: какую проблему надо решить?",
+    }),
+    true,
+  );
+});
+
 test("hasFormalAssistantPhrasing allows sharp reply", () => {
   assert.equal(
     hasFormalAssistantPhrasing({
@@ -53,6 +63,6 @@ test("buildGreetingOnlyReply returns direct opening question for greeting-only i
 
   assert.equal(
     result,
-    "Давай сразу к делу: что у тебя сейчас буксует сильнее всего — продажи, прибыль, управляемость или подготовка к продаже?",
+    "Давай быстро поймём, что сейчас важнее всего: продажи, прибыль, порядок в управлении или подготовка к продаже?",
   );
 });
