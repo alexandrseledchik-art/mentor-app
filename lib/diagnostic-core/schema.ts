@@ -44,7 +44,7 @@ export const diagnosticStructuredResultSchema = z.object({
   goal: z.object({
     primary: z.string().nullable(),
     hypotheses: z.array(z.string().trim().min(1)).max(3),
-    explanation: z.string().trim().min(1),
+    explanation: z.string().trim().min(1).nullable().default(null),
   }),
   symptoms: z
     .array(
@@ -53,7 +53,6 @@ export const diagnosticStructuredResultSchema = z.object({
         source: z.literal("client_words"),
       }),
     )
-    .min(1)
     .max(7),
   situationHypotheses: z
     .array(
@@ -64,7 +63,7 @@ export const diagnosticStructuredResultSchema = z.object({
         basis: z.string().trim().min(1),
       }),
     )
-    .min(1),
+    .default([]),
   causeContours: z
     .array(
       z.object({
@@ -88,7 +87,7 @@ export const diagnosticStructuredResultSchema = z.object({
     secondary: z.string().nullable(),
     tertiary: z.string().nullable(),
     competingVersions: z.array(z.string().trim().min(1)).max(3),
-    basis: z.string().trim().min(1),
+    basis: z.string().trim().min(1).nullable().default(null),
   }),
   dominantSituations: z
     .array(
@@ -113,18 +112,18 @@ export const diagnosticStructuredResultSchema = z.object({
     .default([]),
   firstWave: z.object({
     directions: z.array(z.string().trim().min(1)).min(1).max(2),
-    expectedChanges: z.array(z.string().trim().min(1)).min(1).max(4),
-    successSignals: z.array(z.string().trim().min(1)).min(1).max(4),
-    errorCost: z.string().trim().min(1),
-    basis: z.string().trim().min(1),
+    expectedChanges: z.array(z.string().trim().min(1)).max(4).default([]),
+    successSignals: z.array(z.string().trim().min(1)).max(4).default([]),
+    errorCost: z.string().trim().min(1).nullable().default(null),
+    basis: z.string().trim().min(1).nullable().default(null),
   }),
   secondWave: z
     .object({
-      transitionSignals: z.array(z.string().trim().min(1)).min(1).max(4),
-      whatToConsolidate: z.array(z.string().trim().min(1)).min(1).max(4),
-      nextBottleneckToPrevent: z.array(z.string().trim().min(1)).min(1).max(4),
+      transitionSignals: z.array(z.string().trim().min(1)).max(4),
+      whatToConsolidate: z.array(z.string().trim().min(1)).max(4),
+      nextBottleneckToPrevent: z.array(z.string().trim().min(1)).max(4),
       scalingReadiness: z.enum(["premature", "conditional", "ready"]),
-      basis: z.string().trim().min(1),
+      basis: z.string().trim().min(1).nullable().default(null),
     })
     .nullable()
     .default(null),
@@ -165,13 +164,12 @@ export const DIAGNOSTIC_CORE_JSON_SCHEMA = {
       properties: {
         primary: { type: ["string", "null"] },
         hypotheses: { type: "array", items: { type: "string" }, maxItems: 3 },
-        explanation: { type: "string" },
+        explanation: { type: ["string", "null"] },
       },
       required: ["primary", "hypotheses", "explanation"],
     },
     symptoms: {
       type: "array",
-      minItems: 1,
       maxItems: 7,
       items: {
         type: "object",
@@ -185,7 +183,6 @@ export const DIAGNOSTIC_CORE_JSON_SCHEMA = {
     },
     situationHypotheses: {
       type: "array",
-      minItems: 1,
       items: {
         type: "object",
         additionalProperties: false,
@@ -250,7 +247,7 @@ export const DIAGNOSTIC_CORE_JSON_SCHEMA = {
         secondary: { type: ["string", "null"] },
         tertiary: { type: ["string", "null"] },
         competingVersions: { type: "array", items: { type: "string" }, maxItems: 3 },
-        basis: { type: "string" },
+        basis: { type: ["string", "null"] },
       },
       required: ["main", "secondary", "tertiary", "competingVersions", "basis"],
     },
@@ -287,10 +284,10 @@ export const DIAGNOSTIC_CORE_JSON_SCHEMA = {
       additionalProperties: false,
       properties: {
         directions: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 2 },
-        expectedChanges: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 4 },
-        successSignals: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 4 },
-        errorCost: { type: "string" },
-        basis: { type: "string" },
+        expectedChanges: { type: "array", items: { type: "string" }, maxItems: 4 },
+        successSignals: { type: "array", items: { type: "string" }, maxItems: 4 },
+        errorCost: { type: ["string", "null"] },
+        basis: { type: ["string", "null"] },
       },
       required: ["directions", "expectedChanges", "successSignals", "errorCost", "basis"],
     },
@@ -301,11 +298,11 @@ export const DIAGNOSTIC_CORE_JSON_SCHEMA = {
           type: "object",
           additionalProperties: false,
           properties: {
-            transitionSignals: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 4 },
-            whatToConsolidate: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 4 },
-            nextBottleneckToPrevent: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 4 },
+            transitionSignals: { type: "array", items: { type: "string" }, maxItems: 4 },
+            whatToConsolidate: { type: "array", items: { type: "string" }, maxItems: 4 },
+            nextBottleneckToPrevent: { type: "array", items: { type: "string" }, maxItems: 4 },
             scalingReadiness: { type: "string", enum: ["premature", "conditional", "ready"] },
-            basis: { type: "string" },
+            basis: { type: ["string", "null"] },
           },
           required: ["transitionSignals", "whatToConsolidate", "nextBottleneckToPrevent", "scalingReadiness", "basis"],
         },

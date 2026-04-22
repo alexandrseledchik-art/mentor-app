@@ -13,9 +13,30 @@ test("diagnostic structured result validates schema", () => {
 
 test("diagnostic schema allows conditional depth", () => {
   const shallowResult = buildDiagnosticResultFixture({
+    goal: {
+      primary: "Подготовить бизнес к продаже",
+      hypotheses: [],
+      explanation: null,
+    },
+    symptoms: [],
+    situationHypotheses: [],
     causeContours: [],
     dominantSituations: [],
     hypothesisChecks: [],
+    constraints: {
+      main: "Недостаточная прозрачность бизнеса для покупателя",
+      secondary: null,
+      tertiary: null,
+      competingVersions: ["Проблема может быть не в прозрачности, а в сильной зависимости от собственника"],
+      basis: null,
+    },
+    firstWave: {
+      directions: ["Собрать базовую картину бизнеса для покупателя"],
+      expectedChanges: [],
+      successSignals: [],
+      errorCost: null,
+      basis: null,
+    },
     secondWave: null,
     doNotDoNow: [],
     toolRecommendations: [],
@@ -46,20 +67,18 @@ test("diagnostic summary skips absent optional sections", () => {
   });
   const summary = formatDiagnosticSummary(shallowResult);
 
-  assert.doesNotMatch(summary, /Контуры причин/);
-  assert.doesNotMatch(summary, /Проверка гипотез/);
-  assert.doesNotMatch(summary, /Вторая волна/);
-  assert.doesNotMatch(summary, /Что не делать сейчас/);
+  assert.doesNotMatch(summary, /Контуры:/);
+  assert.doesNotMatch(summary, /Что проверить/);
+  assert.doesNotMatch(summary, /После этого/);
+  assert.doesNotMatch(summary, /Не делать сейчас/);
 });
 
 test("diagnostic summary includes required sections", () => {
   const summary = formatDiagnosticSummary(result);
 
-  assert.match(summary, /Цель и симптомы/);
-  assert.match(summary, /Гипотезы ситуаций/);
-  assert.match(summary, /Контуры причин/);
-  assert.match(summary, /Главное ограничение/);
-  assert.match(summary, /Проверка гипотез/);
-  assert.match(summary, /Первая волна/);
-  assert.match(summary, /Короткий вывод для клиента/);
+  assert.match(summary, /## Картина/);
+  assert.match(summary, /## Ограничение/);
+  assert.match(summary, /## Что проверить/);
+  assert.match(summary, /## Первый ход/);
+  assert.match(summary, /## Вывод/);
 });

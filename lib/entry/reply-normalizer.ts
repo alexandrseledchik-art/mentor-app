@@ -9,6 +9,20 @@ const GLOBAL_FORMAL_PATTERNS = [
   /\bчтобы продолжить,\s*уточните:\s*/gi,
 ];
 
+export function buildGreetingOnlyReply(text: string) {
+  const normalized = text.trim().toLowerCase();
+
+  if (
+    /^(привет|здравствуйте|здрасьте|добрый день|добрый вечер|салют|хай|hello|hi)[!.?]*$/.test(
+      normalized,
+    )
+  ) {
+    return "Давай сразу к делу: что у тебя сейчас буксует сильнее всего — продажи, прибыль, управляемость или подготовка к продаже?";
+  }
+
+  return null;
+}
+
 function trimLeadingFillers(text: string) {
   let normalized = text.trim();
 

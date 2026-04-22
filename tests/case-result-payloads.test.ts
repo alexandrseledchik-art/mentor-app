@@ -16,7 +16,7 @@ test("case artifact payload keeps human-readable diagnostic result", () => {
 
   assert.match(artifact.title, /Диагностический разбор/);
   assert.equal(artifact.summary, result.clientSummary);
-  assert.match(artifact.contentMarkdown, /Главное ограничение/);
+  assert.match(artifact.contentMarkdown, /## Ограничение/);
 });
 
 test("company snapshot payload extracts current company state", () => {

@@ -13,62 +13,78 @@ export function formatDiagnosticSummary(result: DiagnosticStructuredResult) {
     (item) =>
       `${item.contour}: проблема — ${item.hasProblem}, критичность — ${item.criticality}, роль — ${item.role}. ${item.basis}`,
   );
-  const hypothesisChecks = (result.hypothesisChecks ?? []).map((item) => {
-    return [
+  const dominantSituations = (result.dominantSituations ?? []).map(
+    (item) => `${item.name}: ${item.description}. Эффект: ${item.constraintEffect}`,
+  );
+  const hypothesisChecks = (result.hypothesisChecks ?? []).map((item) =>
+    [
       `Гипотеза: ${item.hypothesis}`,
-      `Подтверждает: ${item.confirms.join("; ") || "пока нет подтверждений"}`,
-      `Опровергнет: ${item.refutes.join("; ") || "пока не задано"}`,
+      item.confirms.length > 0 ? `Подтверждает: ${item.confirms.join("; ")}` : null,
+      item.refutes.length > 0 ? `Опровергнет: ${item.refutes.join("; ")}` : null,
       `Вопросы: ${item.questions.join("; ")}`,
-    ].join("\n");
-  });
+    ]
+      .filter(Boolean)
+      .join("\n"),
+  );
   const doNotDo = (result.doNotDoNow ?? []).map(
-    (item) => `${item.action}. Почему кажется полезным: ${item.whyAttractive}. Почему не сейчас: ${item.whyNotNow}`,
+    (item) => `${item.action}. Почему не сейчас: ${item.whyNotNow}`,
   );
 
   return [
-    "## Цель и симптомы",
+    "## Картина",
     result.goal.primary
       ? `Цель: ${result.goal.primary}`
-      : `Гипотезы цели:\n${list(result.goal.hypotheses)}`,
-    `Пояснение: ${result.goal.explanation}`,
-    `Симптомы:\n${list(symptoms)}`,
+      : result.goal.hypotheses.length > 0
+        ? `Гипотезы цели:\n${list(result.goal.hypotheses)}`
+        : null,
+    result.goal.explanation ? `Почему это важно: ${result.goal.explanation}` : null,
+    symptoms.length > 0 ? `Симптомы:\n${list(symptoms)}` : null,
+    hypotheses.length > 0 ? `Гипотезы:\n${list(hypotheses)}` : null,
+    contours.length > 0 ? `Контуры:\n${list(contours)}` : null,
     "",
-    "## Гипотезы ситуаций с уровнем уверенности",
-    list(hypotheses),
-    contours.length > 0 ? "" : null,
-    contours.length > 0 ? "## Контуры причин: где проблема и насколько критично" : null,
-    contours.length > 0 ? list(contours) : null,
-    "",
-    "## Главное ограничение и доминирующие ситуации",
-    `Главное ограничение: ${result.constraints.main ?? "не доказано"}`,
-    result.constraints.secondary ? `Вторичное ограничение: ${result.constraints.secondary}` : null,
-    result.constraints.tertiary ? `Третичное ограничение: ${result.constraints.tertiary}` : null,
-    `Основание: ${result.constraints.basis}`,
-    (result.dominantSituations ?? []).length > 0
-      ? `Доминирующие ситуации:\n${list((result.dominantSituations ?? []).map((item) => `${item.name}: ${item.description}. Эффект: ${item.constraintEffect}`))}`
+    "## Ограничение",
+    `Главное: ${result.constraints.main ?? "не доказано"}`,
+    result.constraints.secondary ? `Вторичное: ${result.constraints.secondary}` : null,
+    result.constraints.tertiary ? `Третичное: ${result.constraints.tertiary}` : null,
+    result.constraints.basis ? `Почему так: ${result.constraints.basis}` : null,
+    dominantSituations.length > 0 ? `Ситуации:\n${list(dominantSituations)}` : null,
+    result.constraints.competingVersions.length > 0
+      ? `Конкурирующие версии:\n${list(result.constraints.competingVersions)}`
       : null,
     hypothesisChecks.length > 0 ? "" : null,
-    hypothesisChecks.length > 0 ? "## Проверка гипотез: что подтверждает, что может опровергнуть, какие вопросы задать" : null,
+    hypothesisChecks.length > 0 ? "## Что проверить" : null,
     hypothesisChecks.length > 0 ? hypothesisChecks.join("\n\n") : null,
     "",
-    "## Первая волна: направление, ожидаемые изменения, признаки успеха, цена ошибки",
+    "## Первый ход",
     `Направления:\n${list(result.firstWave.directions)}`,
-    `Ожидаемые изменения:\n${list(result.firstWave.expectedChanges)}`,
-    `Признаки успеха:\n${list(result.firstWave.successSignals)}`,
-    `Цена ошибки: ${result.firstWave.errorCost}`,
-    `Основание: ${result.firstWave.basis}`,
+    result.firstWave.expectedChanges.length > 0
+      ? `Что должно измениться:\n${list(result.firstWave.expectedChanges)}`
+      : null,
+    result.firstWave.successSignals.length > 0
+      ? `Признаки результата:\n${list(result.firstWave.successSignals)}`
+      : null,
+    result.firstWave.errorCost ? `Цена ошибки: ${result.firstWave.errorCost}` : null,
+    result.firstWave.basis ? `Почему именно это: ${result.firstWave.basis}` : null,
     result.secondWave ? "" : null,
-    result.secondWave ? "## Вторая волна: после каких признаков первой, что закрепляем, какое узкое место предотвращаем" : null,
-    result.secondWave ? `Переходить после:\n${list(result.secondWave.transitionSignals)}` : null,
-    result.secondWave ? `Закрепить:\n${list(result.secondWave.whatToConsolidate)}` : null,
-    result.secondWave ? `Предотвратить:\n${list(result.secondWave.nextBottleneckToPrevent)}` : null,
-    result.secondWave ? `Готовность к масштабированию: ${result.secondWave.scalingReadiness}` : null,
-    result.secondWave ? `Основание: ${result.secondWave.basis}` : null,
+    result.secondWave ? "## После этого" : null,
+    result.secondWave?.transitionSignals?.length
+      ? `Переходить после:\n${list(result.secondWave.transitionSignals)}`
+      : null,
+    result.secondWave?.whatToConsolidate?.length
+      ? `Закрепить:\n${list(result.secondWave.whatToConsolidate)}`
+      : null,
+    result.secondWave?.nextBottleneckToPrevent?.length
+      ? `Не допустить дальше:\n${list(result.secondWave.nextBottleneckToPrevent)}`
+      : null,
+    result.secondWave?.scalingReadiness
+      ? `Готовность к расширению: ${result.secondWave.scalingReadiness}`
+      : null,
+    result.secondWave?.basis ? `Почему так: ${result.secondWave.basis}` : null,
     doNotDo.length > 0 ? "" : null,
-    doNotDo.length > 0 ? "## Что не делать сейчас" : null,
+    doNotDo.length > 0 ? "## Не делать сейчас" : null,
     doNotDo.length > 0 ? list(doNotDo) : null,
     "",
-    "## Короткий вывод для клиента",
+    "## Вывод",
     result.clientSummary,
   ]
     .filter((item): item is string => typeof item === "string" && item.length > 0)

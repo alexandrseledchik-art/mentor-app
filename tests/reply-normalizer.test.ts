@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  buildGreetingOnlyReply,
   hasFormalAssistantPhrasing,
   normalizeReplyText,
 } from "@/lib/entry/reply-normalizer";
@@ -44,5 +45,14 @@ test("hasFormalAssistantPhrasing allows sharp reply", () => {
       text: "Значит задача сейчас не в продаже как таковой, а в подготовке. Что у тебя сейчас отпугнёт покупателя быстрее всего?",
     }),
     false,
+  );
+});
+
+test("buildGreetingOnlyReply returns direct opening question for greeting-only input", () => {
+  const result = buildGreetingOnlyReply("привет");
+
+  assert.equal(
+    result,
+    "Давай сразу к делу: что у тебя сейчас буксует сильнее всего — продажи, прибыль, управляемость или подготовка к продаже?",
   );
 });

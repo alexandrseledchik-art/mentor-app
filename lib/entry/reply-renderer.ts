@@ -3,6 +3,7 @@ import { z } from "zod";
 import { callOpenAiJson } from "@/lib/entry/openai-json";
 import { POST_WEBSITE_SCREENING_REQUEST_TEXT } from "@/lib/entry/constants";
 import {
+  buildGreetingOnlyReply,
   hasFormalAssistantPhrasing,
   normalizeReplyText,
 } from "@/lib/entry/reply-normalizer";
@@ -110,6 +111,15 @@ export async function runReplyRenderer(params: {
   websiteScreening?: WebsiteScreeningResult | null;
   diagnosticResult?: DiagnosticStructuredResult | null;
 }) {
+  const greetingOnlyReply =
+    params.action === "ask_question" ? buildGreetingOnlyReply(params.rawText) : null;
+
+  if (greetingOnlyReply) {
+    return renderedReplySchema.parse({
+      replyText: greetingOnlyReply,
+    });
+  }
+
   const userPayload = {
     ...params,
     websiteScreeningRequestText:

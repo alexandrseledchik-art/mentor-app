@@ -6,7 +6,6 @@ import { createCase } from "@/lib/cases/create-case";
 import { buildCaseDeepLink } from "@/lib/cases/deeplink";
 import { getActiveCompanyContextForCase } from "@/lib/cases/get-active-company-context";
 import {
-  POST_WEBSITE_SCREENING_REQUEST_TEXT,
 } from "@/lib/entry/constants";
 import { getOpenAiModel, getOpenAiNumberEnv } from "@/lib/openai/model-config";
 import { getOrCreateTelegramAppUser } from "@/lib/telegram/app-user";
@@ -73,7 +72,7 @@ const WEBSITE_SCREENING_JSON_SCHEMA = {
   ],
 } as const;
 
-const WEBSITE_SCREENING_SYSTEM_PROMPT = `Ты — business systems triage advisor.
+const WEBSITE_SCREENING_SYSTEM_PROMPT = `Ты — внешний разборщик сайта и продукта.
 
 Пользователь дал только сайт. Твоя задача — сделать внешний скрининг сайта, а не диагностику бизнеса.
 
@@ -87,6 +86,7 @@ const WEBSITE_SCREENING_SYSTEM_PROMPT = `Ты — business systems triage adviso
 - не предлагай автоматизацию как вывод по умолчанию
 - если сайт описывает продукт/сервис, анализируй видимый оффер и путь пользователя, а не "болезни" самой компании
 - не формулируй следующий вопрос пользователю, это делает продуктовый сценарий
+- не пытайся выглядеть умнее сигнала: по сайту видно только поверхность
 
 Формат ответа строго JSON по схеме.`;
 
@@ -154,18 +154,16 @@ function getStructuredOutput(response: Record<string, unknown>) {
 
 function buildWebsiteScreeningMarkdown(result: WebsiteScreeningResult) {
   return [
-    "## Что видно снаружи",
+    "## Поверхность",
     result.observedPositioning,
-    "## Сильные стороны",
+    "## Сильные сигналы",
     result.visibleStrengths.map((item) => `- ${item}`).join("\n"),
     "## Что стоит проверить",
     result.possibleRiskAreas
       .map((item) => `- ${item.area}: ${item.whyCheck}`)
       .join("\n"),
-    "## Что нельзя утверждать по сайту",
+    "## Границы вывода",
     result.cannotConclude.map((item) => `- ${item}`).join("\n"),
-    "## Следующий вопрос",
-    POST_WEBSITE_SCREENING_REQUEST_TEXT,
   ].join("\n\n");
 }
 
