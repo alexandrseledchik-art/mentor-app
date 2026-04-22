@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
+import { POST_WEBSITE_SCREENING_REQUEST_TEXT } from "@/lib/entry/constants";
 import { buildDiagnosisDeepLink } from "@/lib/entry/deeplink";
 import { buildEntryOfferSessionState } from "@/lib/entry/offer-session-state";
 import { buildWorkingText } from "@/lib/entry/working-text";
@@ -44,6 +45,7 @@ test("website follow-up context marks link as reference, not ownership proof", (
       clarifyingAnswers: [
         {
           questionKey: "post_website_screening_request",
+          questionText: POST_WEBSITE_SCREENING_REQUEST_TEXT,
           answerText: "Хочу продать бизнес",
         },
       ],
@@ -54,4 +56,25 @@ test("website follow-up context marks link as reference, not ownership proof", (
   assert.match(workingText, /объект внешнего разбора/i);
   assert.match(workingText, /Не считай это подтверждением/i);
   assert.match(workingText, /https:\/\/supabase\.com\//i);
+});
+
+test("working text keeps previous question-answer structure", () => {
+  const workingText = buildWorkingText(
+    {
+      initialMessage: "Хочу продать бизнес",
+      lastQuestionKey: "core_consultant_question",
+      clarifyingAnswers: [
+        {
+          questionKey: "core_consultant_question",
+          questionText: "Что сейчас сильнее всего мешает продаже?",
+          answerText: "Данные не выгружены и я пока не понимаю главный барьер.",
+        },
+      ],
+    },
+    "Вот в этом и хочу разобраться",
+  );
+
+  assert.match(workingText, /Предыдущий вопрос ассистента:/);
+  assert.match(workingText, /Ответ пользователя:/);
+  assert.match(workingText, /Текущее сообщение пользователя:/);
 });

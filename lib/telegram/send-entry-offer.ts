@@ -2,15 +2,11 @@ import "server-only";
 
 import { sendTelegramMessage } from "@/lib/telegram/telegram-bot";
 
-export const TELEGRAM_ENTRY_OFFER_TEXT = `Здравствуйте!
-
-Вы общаетесь с AI-ассистентом Александра Селедчика по разбору бизнеса и управленческой диагностике.
-
-За 3 минуты покажу, где бизнес теряет деньги, время и управляемость — и что делать первым.
+export const TELEGRAM_ENTRY_OFFER_TEXT = `Здесь можно быстро разобрать, где бизнес буксует и что делать первым.
 
 Достаточно сайта или пары фраз о ситуации.
 
-Расскажите о запросе любым удобным способом 👇`;
+Напишите запрос как есть. Можно текстом, голосом, ссылкой или картинкой 👇`;
 
 export async function sendEntryOffer(chatId: number) {
   return sendTelegramMessage({

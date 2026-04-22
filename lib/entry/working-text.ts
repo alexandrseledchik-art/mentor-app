@@ -2,6 +2,7 @@ import { POST_WEBSITE_SCREENING_REQUEST_KEY } from "@/lib/entry/constants";
 
 type ClarifyingAnswer = {
   questionKey: string;
+  questionText?: string;
   answerText: string;
 };
 
@@ -40,9 +41,12 @@ export function buildWorkingText(
 
   return [
     referenceContext,
-    session.initialMessage,
-    ...session.clarifyingAnswers.map((item) => item.answerText),
-    currentMessage,
+    `Первичное сообщение пользователя: ${session.initialMessage}`,
+    ...session.clarifyingAnswers.flatMap((item) => [
+      item.questionText ? `Предыдущий вопрос ассистента: ${item.questionText}` : null,
+      `Ответ пользователя: ${item.answerText}`,
+    ]),
+    `Текущее сообщение пользователя: ${currentMessage}`,
   ]
     .filter(Boolean)
     .join("\n");
