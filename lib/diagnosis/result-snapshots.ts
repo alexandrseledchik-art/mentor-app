@@ -6,6 +6,7 @@ export interface CreateResultSnapshotParams {
   diagnosisSessionId: string;
   userId: string;
   companyId: string;
+  workspaceId: string | null;
   overallScore: number | null;
   dimensionScores: DiagnosisDimensionScore[];
   weakestZones: string[];
@@ -39,6 +40,7 @@ export async function createResultSnapshot(
     diagnosis_session_id: params.diagnosisSessionId,
     user_id: params.userId,
     company_id: params.companyId,
+    workspace_id: params.workspaceId,
     overall_score: params.overallScore,
     dimension_scores: params.dimensionScores as unknown as Json,
     weakest_zones: params.weakestZones as unknown as Json,

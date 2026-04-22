@@ -86,6 +86,7 @@ export async function completeCase(params: {
         {
           company_id: existingCase.companyId,
           user_id: existingCase.userId,
+          workspace_id: existingCase.workspaceId,
           source_case_id: existingCase.id,
           current_goal: snapshotPayload.currentGoal,
           main_constraint: snapshotPayload.mainConstraint,

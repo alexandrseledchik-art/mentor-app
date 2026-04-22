@@ -393,7 +393,7 @@ export async function POST(request: Request) {
     .from("companies")
     .select("id")
     .eq("id", resolvedCompanyId)
-    .eq("user_id", currentAppUser.id)
+    .eq("workspace_id", workspace.id)
     .maybeSingle();
 
   if (companyError || !company) {
@@ -408,6 +408,7 @@ export async function POST(request: Request) {
   try {
     sessionResult = await startOrResumeDiagnosis({
       userId: currentAppUser.id,
+      workspaceId: workspace.id,
       companyId: company.id,
       questionSetId: questionSetResult.questionSet.id,
     });

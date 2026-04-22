@@ -285,6 +285,7 @@ export interface Database {
           team_size: string;
           updated_at: string;
           user_id: string;
+          workspace_id: string | null;
         };
         Insert: {
           created_at?: string;
@@ -299,6 +300,7 @@ export interface Database {
           team_size: string;
           updated_at?: string;
           user_id: string;
+          workspace_id?: string | null;
         };
         Update: {
           created_at?: string;
@@ -313,6 +315,7 @@ export interface Database {
           team_size?: string;
           updated_at?: string;
           user_id?: string;
+          workspace_id?: string | null;
         };
         Relationships: [
           {
@@ -320,6 +323,13 @@ export interface Database {
             columns: ["user_id"];
             isOneToOne: false;
             referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "companies_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
             referencedColumns: ["id"];
           },
         ];
@@ -337,6 +347,7 @@ export interface Database {
           tool_recommendations: Json;
           updated_at: string;
           user_id: string;
+          workspace_id: string | null;
         };
         Insert: {
           company_id: string;
@@ -350,6 +361,7 @@ export interface Database {
           tool_recommendations?: Json;
           updated_at?: string;
           user_id: string;
+          workspace_id?: string | null;
         };
         Update: {
           company_id?: string;
@@ -363,6 +375,7 @@ export interface Database {
           tool_recommendations?: Json;
           updated_at?: string;
           user_id?: string;
+          workspace_id?: string | null;
         };
         Relationships: [
           {
@@ -384,6 +397,13 @@ export interface Database {
             columns: ["user_id"];
             isOneToOne: false;
             referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "company_snapshots_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
             referencedColumns: ["id"];
           },
         ];
@@ -538,6 +558,7 @@ export interface Database {
           total_score: number | null;
           updated_at: string;
           user_id: string | null;
+          workspace_id: string | null;
         };
         Insert: {
           answers?: Json | null;
@@ -554,6 +575,7 @@ export interface Database {
           total_score?: number | null;
           updated_at?: string;
           user_id?: string | null;
+          workspace_id?: string | null;
         };
         Update: {
           answers?: Json | null;
@@ -570,6 +592,7 @@ export interface Database {
           total_score?: number | null;
           updated_at?: string;
           user_id?: string | null;
+          workspace_id?: string | null;
         };
         Relationships: [
           {
@@ -591,6 +614,13 @@ export interface Database {
             columns: ["user_id"];
             isOneToOne: false;
             referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "diagnosis_sessions_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
             referencedColumns: ["id"];
           },
         ];
@@ -683,6 +713,7 @@ export interface Database {
           summary: Json;
           user_id: string;
           weakest_zones: Json;
+          workspace_id: string | null;
         };
         Insert: {
           company_id: string;
@@ -696,6 +727,7 @@ export interface Database {
           summary: Json;
           user_id: string;
           weakest_zones: Json;
+          workspace_id?: string | null;
         };
         Update: {
           company_id?: string;
@@ -709,6 +741,7 @@ export interface Database {
           summary?: Json;
           user_id?: string;
           weakest_zones?: Json;
+          workspace_id?: string | null;
         };
         Relationships: [
           {
@@ -730,6 +763,13 @@ export interface Database {
             columns: ["user_id"];
             isOneToOne: false;
             referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "result_snapshots_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
             referencedColumns: ["id"];
           },
         ];
@@ -909,6 +949,48 @@ export interface Database {
           updated_at?: string;
         };
         Relationships: [];
+      };
+      workspace_members: {
+        Row: {
+          created_at: string;
+          id: string;
+          role: string;
+          updated_at: string;
+          user_id: string;
+          workspace_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          role?: string;
+          updated_at?: string;
+          user_id: string;
+          workspace_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          role?: string;
+          updated_at?: string;
+          user_id?: string;
+          workspace_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "workspace_members_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "workspace_members_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       workspaces: {
         Row: {

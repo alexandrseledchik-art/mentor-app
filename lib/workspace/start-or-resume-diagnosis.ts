@@ -57,6 +57,7 @@ function mapSession(row: SessionRow): DiagnosisSession {
 
 export interface StartOrResumeDiagnosisParams {
   userId: string;
+  workspaceId: string;
   companyId: string;
   questionSetId: string;
 }
@@ -83,6 +84,7 @@ export async function startOrResumeDiagnosis(
     .from("diagnosis_sessions")
     .insert({
       user_id: params.userId,
+      workspace_id: params.workspaceId,
       company_id: params.companyId,
       question_set_id: params.questionSetId,
       status: "in_progress",

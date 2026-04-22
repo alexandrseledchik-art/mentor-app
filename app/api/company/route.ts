@@ -112,10 +112,13 @@ export async function POST(request: Request) {
       appUser = createdAppUser;
     }
 
+    const workspace = await getOrCreateWorkspace(appUser.id);
+
     let companyInsert = await supabase
       .from("companies")
       .insert({
         user_id: appUser.id,
+        workspace_id: workspace.id,
         name,
         industry,
         team_size,
@@ -132,6 +135,7 @@ export async function POST(request: Request) {
         .from("companies")
         .insert({
           user_id: appUser.id,
+          workspace_id: workspace.id,
           name,
           industry,
           team_size,
@@ -182,7 +186,6 @@ export async function POST(request: Request) {
     });
 
     try {
-      await getOrCreateWorkspace(appUser.id);
       await setActiveCompany({
         userId: appUser.id,
         companyId: company.id,

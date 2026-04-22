@@ -253,6 +253,32 @@ async function resolveSessionUserId(params: {
   return company.user_id;
 }
 
+async function resolveSessionWorkspaceId(params: {
+  session: SessionRow;
+  fallbackSession: SessionRow;
+}) {
+  if (params.session.workspace_id) {
+    return params.session.workspace_id;
+  }
+
+  if (params.fallbackSession.workspace_id) {
+    return params.fallbackSession.workspace_id;
+  }
+
+  const supabase = getSupabaseAdminClient();
+  const { data: company, error } = await supabase
+    .from("companies")
+    .select("workspace_id")
+    .eq("id", params.fallbackSession.company_id)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return company?.workspace_id ?? null;
+}
+
 export async function POST(request: Request) {
   const body = (await request.json()) as DiagnosisSubmitRequest;
   const parsed = diagnosisSubmitRequestSchema.safeParse(body);
@@ -420,12 +446,17 @@ export async function POST(request: Request) {
       session,
       fallbackSession: finalSessionRow,
     });
+    const snapshotWorkspaceId = await resolveSessionWorkspaceId({
+      session,
+      fallbackSession: finalSessionRow,
+    });
 
     try {
       await createResultSnapshot({
         diagnosisSessionId: finalSessionRow.id,
         userId: snapshotUserId,
         companyId: finalSessionRow.company_id,
+        workspaceId: snapshotWorkspaceId,
         overallScore: totalScore,
         dimensionScores,
         weakestZones,
