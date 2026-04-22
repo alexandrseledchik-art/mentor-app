@@ -76,6 +76,7 @@ export async function runCoreEntryConsultant(params: {
   });
 
   let question: string | null = null;
+  let questionWhyThisQuestion: string | null = null;
   let toolSlug: string | null = null;
   let toolTitle: string | null = null;
   let websiteScreening: WebsiteScreeningResult | null = null;
@@ -88,6 +89,7 @@ export async function runCoreEntryConsultant(params: {
       routerReason: routerDecision.routerReason,
     });
     question = nextQuestion.question;
+    questionWhyThisQuestion = nextQuestion.whyThisQuestion;
   }
 
   if (routerDecision.action === "tool_navigation") {
@@ -163,7 +165,7 @@ export async function runCoreEntryConsultant(params: {
     question: question
       ? {
           text: question,
-          whyThisQuestion: routerDecision.routerReason,
+          whyThisQuestion: questionWhyThisQuestion ?? routerDecision.routerReason,
         }
       : null,
     tool:

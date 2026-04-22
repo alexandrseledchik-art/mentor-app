@@ -78,3 +78,24 @@ test("working text keeps previous question-answer structure", () => {
   assert.match(workingText, /Ответ пользователя:/);
   assert.match(workingText, /Текущее сообщение пользователя:/);
 });
+
+test("working text adds anti-repeat guidance for latest answered question", () => {
+  const workingText = buildWorkingText(
+    {
+      initialMessage: "Хочу продать бизнес",
+      lastQuestionKey: "core_consultant_question",
+      clarifyingAnswers: [
+        {
+          questionKey: "core_consultant_question",
+          questionText: "Какой сейчас основной источник дохода и насколько он стабилен?",
+          answerText: "Клиенты по рекомендациям, поток нестабилен.",
+        },
+      ],
+    },
+    "Вот это и нужно разобрать дальше",
+  );
+
+  assert.match(workingText, /Важно: если текущее сообщение уже отвечает/i);
+  assert.match(workingText, /Последний вопрос ассистента:/);
+  assert.match(workingText, /Последний ответ пользователя:/);
+});
